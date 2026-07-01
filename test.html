@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+  <body>
+    <h1>Telemetry Stream</h1>
+    <pre id="output"></pre>
+
+    <script>
+      const output = document.getElementById("output");
+      const socket = new WebSocket("ws://127.0.0.1:8000/ws/telemetry");
+
+      socket.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        output.textContent = JSON.stringify(data, null, 2);
+      };
+    </script>
+  </body>
+</html>
