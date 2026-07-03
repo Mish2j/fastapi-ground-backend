@@ -1,23 +1,81 @@
+'''
+Description: 
+Python FastAPI ground-software simulator with modular telemetry generation, command validation, event logging, WebSocket broadcasting, and REST APIs for dashboard (later Open MCT) integration.
+
+
+1. Backend creates telemetry
+2. Backend sends telemetry through WebSocket
+3. Frontend displays telemetry
+4. User sends command through REST
+5. Backend validates command
+6. Backend changes simulator state
+7. New telemetry reflects that change
+8. Event log records what happened
+
+Real-time flow:
+simulator.py
+  ↓ generates telemetry
+telemetry_service.py
+  ↓ saves latest/history
+connection_manager.py
+  ↓ broadcasts to clients
+websocket_routes.py
+  ↓ sends to frontend/Open MCT
+
+Command flow:
+POST /commands
+  ↓
+command_routes.py
+  ↓
+command_service.py
+  ↓
+command_handler.py
+  ↓
+satellite_state.py updates
+  ↓
+event_log.py records event
+  ↓
+next telemetry shows new state
+'''
+
 # FastAPI is a Python class that provides all the functionality for your API.
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, WebSocketException 
-# from fastapi.responses import HTMLResponse
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 import asyncio
-from pydantic import BaseModel
-
-from telemetry import generate_telemetry, get_telemetry_history as telemetry_history, get_latest_telemetry, set_mode
 
 
-class CommandRequest(BaseModel):
-    command: str
-    params: dict = {}
+from app.api.telemetry_routes import router as telemetry_router
+from app.api.command_routes import router as command_router
+from app.api.event_routes import router as event_router
+from app.realtime.websocket_routes import router as websocket_router
 
-app = FastAPI() # app variable will be an "instance" of the class FastAPI
+app = FastAPI(title="Mission Telemetry Backend") # app variable will be an "instance" of the class FastAPI
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "null",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(telemetry_router)
+app.include_router(command_router)
+app.include_router(event_router)
+app.include_router(websocket_router)
 
 # ------------ GET ------------
 # path operation function
 @app.get("/") # tells FastAPI that the function right below is in charge of handling requests that go to the path /
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Mission Telemetry Backend"}
 
 
 @app.get("/health")
@@ -25,42 +83,13 @@ def health_check():
     return {"status": 'ok'}
 
 
-@app.get("/telemetry/latest")
-def get_telemetry_latest():
-    return get_latest_telemetry()
-
-
-@app.get("/telemetry/history")
-def get_telemetry_history():
-    return telemetry_history()
-    
-# ------------ POST ------------
-@app.post("/commands")
-def send_command(request: CommandRequest):
-    if request.command == "SET_MODE":
-        mode = request.params.get("mode")
-        return set_mode(mode)
-
-    return {
-        "status": "REJECTED",
-        "message": f"Unknown command: {request.command}"
-    }
+"""
 
 
 # ------------ websocket ------------
-@app.websocket("/ws/telemetry")
-async def tel_websocket(websocket: WebSocket):
-    await websocket.accept()
 
-    try: 
-        while True:
-            data = generate_telemetry()
-            await websocket.send_json(data)
-            await asyncio.sleep(1)
-    except WebSocketDisconnect:
-        print("Client disconnected")
 
-"""
+
 GET /health
 GET /telemetry/latest
 GET /telemetry/history?point=battery_voltage&start=...&end=...

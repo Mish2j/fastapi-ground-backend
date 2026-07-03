@@ -1,0 +1,11 @@
+from typing import Final
+
+STATUS_REJECT: Final = "REJECTED"
+STATUS_ACCEPT: Final = "ACCEPTED"
+
+SET_MODE_COMMAND: Final = "SET_MODE"
+
+EVENT_COMMAND: Final = "COMMAND"
+
+ALLOWED_MODES: Final = ["NOMINAL", "SAFE", "SCIENCE"]
+
