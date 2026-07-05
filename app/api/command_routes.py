@@ -1,12 +1,11 @@
-"""
-@app.post("/commands")
-def send_command(request: CommandRequest):
-    if request.command == SET_MODE_COMMAND:
-        mode = request.params.get("mode")
-        return set_mode(mode)
+from fastapi import APIRouter
 
-    return {
-        "status": STATUS_REJECT,
-        "message": f"Unknown command: {request.command}"
-    }
-"""
+from app.models.command import CommandRequest
+from app.services.command_service import execute_command
+
+
+router = APIRouter(prefix="/commands", tags=["Commands"])
+
+@router.post("")
+def send_command(request: CommandRequest):
+    return execute_command(request)
