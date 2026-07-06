@@ -1,40 +1,68 @@
-from app.core.satellite_state import get_Satellite_state, update_mode, update_downlink_rate, add_faults, clear_faults
+from app.core.satellite_state import (
+    update_mode,
+    update_downlink_rate,
+    add_faults,
+    clear_faults,
+)
 
-from constants import ALLOWED_MODES, STATUS_REJECT, STATUS_ACCEPT
+from constants import Mode as ALLOWED_MODES, DownlinkRate, STATUS_REJECT, STATUS_ACCEPT
 
-'''
-    add_event(
-        event_type=EVENT_COMMAND,
-        command=SET_MODE_COMMAND,
-        status=STATUS_ACCEPT,
-        message=result["message"]
-    )
-'''
 
 def handle_set_mode(params: dict):
     mode = params.get("mode")
 
-    if mode not in ALLOWED_MODES:
+    if mode not in ALLOWED_MODES.__members__:
         return {
             "status": STATUS_REJECT,
-            "message": f"Invalid mode: {mode}"
+            "message": f"Invalid mode: {mode}",
         }
-    
+
     update_mode(mode)
 
     return {
         "status": STATUS_ACCEPT,
-        "message": f"Mode changed to {mode}"
+        "message": f"Mode changed to {mode}",
     }
 
 
 def handle_set_downlink_rate(params: dict):
-    pass
+    rate = params.get("rate")
+
+    if rate not in DownlinkRate.__members__:
+        return {
+            "status": STATUS_REJECT,
+            "message": f"Invalid downlink rate: {rate}",
+        }
+
+    update_downlink_rate(rate)
+
+    return {
+        "status": STATUS_ACCEPT,
+        "message": f"Downlink rate changed to {rate}",
+    }
 
 
 def handle_add_fault(params: dict):
-    pass
+    fault = params.get("fault")
+
+    if not fault:
+        return {
+            "status": STATUS_REJECT,
+            "message": "Fault name is required",
+        }
+
+    add_faults(fault)
+
+    return {
+        "status": STATUS_ACCEPT,
+        "message": f"Fault injected: {fault}",
+    }
 
 
 def handle_clear_faults():
-    pass
+    clear_faults()
+
+    return {
+        "status": STATUS_ACCEPT,
+        "message": "All faults cleared",
+    }
