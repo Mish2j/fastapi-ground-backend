@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class Telemetry(BaseModel):
     timestamp: str
     satellite_id: str

@@ -9,53 +9,53 @@ from constants import Mode as ALLOWED_MODES, DownlinkRate, STATUS_REJECT, STATUS
 
 
 def handle_set_mode(params: dict):
-    mode = params.get("mode")
+    mode = params.get('mode')
 
     if mode not in ALLOWED_MODES.__members__:
         return {
-            "status": STATUS_REJECT,
-            "message": f"Invalid mode: {mode}",
+            'status': STATUS_REJECT,
+            'message': f'Invalid mode: {mode}',
         }
 
     update_mode(mode)
 
     return {
-        "status": STATUS_ACCEPT,
-        "message": f"Mode changed to {mode}",
+        'status': STATUS_ACCEPT,
+        'message': f'Mode changed to {mode}',
     }
 
 
 def handle_set_downlink_rate(params: dict):
-    rate = params.get("rate")
+    rate = params.get('rate')
 
     if rate not in DownlinkRate.__members__:
         return {
-            "status": STATUS_REJECT,
-            "message": f"Invalid downlink rate: {rate}",
+            'status': STATUS_REJECT,
+            'message': f'Invalid downlink rate: {rate}',
         }
 
     update_downlink_rate(rate)
 
     return {
-        "status": STATUS_ACCEPT,
-        "message": f"Downlink rate changed to {rate}",
+        'status': STATUS_ACCEPT,
+        'message': f'Downlink rate changed to {rate}',
     }
 
 
 def handle_add_fault(params: dict):
-    fault = params.get("fault")
+    fault = params.get('fault')
 
     if not fault:
         return {
-            "status": STATUS_REJECT,
-            "message": "Fault name is required",
+            'status': STATUS_REJECT,
+            'message': 'Fault name is required',
         }
 
     add_faults(fault)
 
     return {
-        "status": STATUS_ACCEPT,
-        "message": f"Fault injected: {fault}",
+        'status': STATUS_ACCEPT,
+        'message': f'Fault injected: {fault}',
     }
 
 
@@ -63,6 +63,6 @@ def handle_clear_faults():
     clear_faults()
 
     return {
-        "status": STATUS_ACCEPT,
-        "message": "All faults cleared",
+        'status': STATUS_ACCEPT,
+        'message': 'All faults cleared',
     }

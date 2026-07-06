@@ -1,0 +1,12 @@
+[project]
+name = "mission-telemetry-backend"
+version = "0.1.0"
+description = "Python backend for simulated spacecraft telemetry, command validation, event logging, and real-time ground software dashboard integration."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard]>=0.115.0",
+]
+
+[tool.ruff.format]
+quote-style = "single"

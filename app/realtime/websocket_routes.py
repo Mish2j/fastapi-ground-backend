@@ -6,14 +6,14 @@ from app.realtime.connection_manager import manager
 from app.services.telemetry_service import create_new_telemetry
 
 
-router = APIRouter(prefix="ws", tags=["Websocket"])
+router = APIRouter(prefix='/ws', tags=['Websocket'])
 
 
-@router.websocket("/telemetry")
+@router.websocket('/telemetry')
 async def telemetry_websocket(websocket: WebSocket):
     await manager.connect(websocket)
 
-    try: 
+    try:
         while True:
             telemetry = create_new_telemetry()
             await manager.send_json(websocket, telemetry)
@@ -21,4 +21,4 @@ async def telemetry_websocket(websocket: WebSocket):
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-        print("Client disconnected")
+        print('Client disconnected')

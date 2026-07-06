@@ -14,7 +14,7 @@ def save_telemetry(telemetry: dict):
 def get_latest_telemetry():
     if not telemetry_history:
         return None
-    
+
     return telemetry_history[-1]
 
 
@@ -25,7 +25,7 @@ def get_telemetry_history(limit: int = 100):
 def save_event(event: dict):
     if len(event_log) > MAX_EVENT_LOG:
         event_log.pop(0)
-    
+
     event_log.append(event)
 
 

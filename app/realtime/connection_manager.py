@@ -17,9 +17,9 @@ class ConnectionManager:
         await websocket.send_json(data)
 
     async def broadcast(self, data: dict):
-        '''
+        """
         Push live telemetry to every connected dashboard, and clean up dead connections.
-        '''
+        """
         disconnected = []
 
         for connection in self.active_connections:
@@ -27,7 +27,7 @@ class ConnectionManager:
                 await connection.send_json(data)
             except Exception:
                 disconnected.append(connection)
-        
+
         for connection in disconnected:
             self.disconnect(connection)
 
