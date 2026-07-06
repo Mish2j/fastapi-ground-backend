@@ -5,10 +5,10 @@ MAX_EVENT_LOG = 200
 
 
 def save_telemetry(telemetry: dict):
-    telemetry_history.append(telemetry)
-
     if len(telemetry_history) > MAX_TELEMETRY_HISTORY:
         telemetry_history.pop(0)
+
+    telemetry_history.append(telemetry)
 
 
 def get_latest_telemetry():
