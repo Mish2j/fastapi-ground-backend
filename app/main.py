@@ -42,8 +42,6 @@ next telemetry shows new state
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-import asyncio
-
 
 from app.api.telemetry_routes import router as telemetry_router
 from app.api.command_routes import router as command_router

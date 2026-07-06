@@ -5,7 +5,7 @@ from app.core.satellite_state import (
     clear_faults,
 )
 
-from constants import Mode as ALLOWED_MODES, DownlinkRate, STATUS_REJECT, STATUS_ACCEPT
+from app.constants import Mode as ALLOWED_MODES, DownlinkRate, Status
 
 
 def handle_set_mode(params: dict):
@@ -13,14 +13,14 @@ def handle_set_mode(params: dict):
 
     if mode not in ALLOWED_MODES.__members__:
         return {
-            'status': STATUS_REJECT,
+            'status': Status.REJECTED,
             'message': f'Invalid mode: {mode}',
         }
 
     update_mode(mode)
 
     return {
-        'status': STATUS_ACCEPT,
+        'status': Status.ACCEPTED,
         'message': f'Mode changed to {mode}',
     }
 
@@ -30,14 +30,14 @@ def handle_set_downlink_rate(params: dict):
 
     if rate not in DownlinkRate.__members__:
         return {
-            'status': STATUS_REJECT,
+            'status': Status.REJECTED,
             'message': f'Invalid downlink rate: {rate}',
         }
 
     update_downlink_rate(rate)
 
     return {
-        'status': STATUS_ACCEPT,
+        'status': Status.ACCEPTED,
         'message': f'Downlink rate changed to {rate}',
     }
 
@@ -47,14 +47,14 @@ def handle_add_fault(params: dict):
 
     if not fault:
         return {
-            'status': STATUS_REJECT,
+            'status': Status.REJECTED,
             'message': 'Fault name is required',
         }
 
     add_faults(fault)
 
     return {
-        'status': STATUS_ACCEPT,
+        'status': Status.ACCEPTED,
         'message': f'Fault injected: {fault}',
     }
 
@@ -63,6 +63,6 @@ def handle_clear_faults():
     clear_faults()
 
     return {
-        'status': STATUS_ACCEPT,
+        'status': Status.ACCEPTED,
         'message': 'All faults cleared',
     }

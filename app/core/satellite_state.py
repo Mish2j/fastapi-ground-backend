@@ -1,12 +1,14 @@
+from app.constants import DownlinkRate, Mode
+
 satellite_state = {
     'satellite_id': 'SAT-001',
-    'mode': 'NOMINAL',
-    'downlink_rate': 'LOW',
+    'mode': Mode.NOMINAL,
+    'downlink_rate': DownlinkRate.LOW,
     'faults': [],
 }
 
 
-def get_Satellite_state():
+def get_satellite_state():
     return satellite_state
 
 

@@ -1,13 +1,22 @@
-from typing import Final
 from enum import StrEnum
 
-STATUS_REJECT: Final = 'REJECTED'
-STATUS_ACCEPT: Final = 'ACCEPTED'
+
+class Status(StrEnum):
+    REJECTED = 'REJECTED'
+    ACCEPTED = 'ACCEPTED'
 
 
-SET_MODE_COMMAND: Final = 'SET_MODE'
+class Event(StrEnum):
+    COMMAND = 'COMMAND'
+    SYSTEM = 'SYSTEM'
+    FAULT = 'FAULT'
 
-EVENT_COMMAND: Final = 'COMMAND'
+
+class Command(StrEnum):
+    SET_MODE = 'SET_MODE'
+    SET_DOWNLINK_RATE = 'SET_DOWNLINK_RATE'
+    INJECT_FAULT = 'INJECT_FAULT'
+    CLEAR_FAULTS = 'CLEAR_FAULTS'
 
 
 class Mode(StrEnum):
