@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from app.core.satellite_state import (
     update_mode,
     update_downlink_rate,
@@ -5,57 +7,61 @@ from app.core.satellite_state import (
     clear_faults,
 )
 
-from app.constants import Mode as ALLOWED_MODES, DownlinkRate, Status
+from app.constants import Status
+from app.models.command import SetModeParams, SetDownlinkRateParams, InjectFaultParams
 
 
 def handle_set_mode(params: dict):
-    mode = params.get('mode')
-
-    if mode not in ALLOWED_MODES.__members__:
+    try:
+        validated_mode_params = SetModeParams(**params)
+    except ValidationError as error:
         return {
             'status': Status.REJECTED,
-            'message': f'Invalid mode: {mode}',
+            # 'message': f'Invalid mode: {mode}',
+            'message': str(error),
         }
 
-    update_mode(mode)
+    update_mode(validated_mode_params.mode)
 
     return {
         'status': Status.ACCEPTED,
-        'message': f'Mode changed to {mode}',
+        'message': f'Mode changed to {validated_mode_params.mode}',
     }
 
 
 def handle_set_downlink_rate(params: dict):
-    rate = params.get('rate')
-
-    if rate not in DownlinkRate.__members__:
+    try:
+        validated_downlink_rate = SetDownlinkRateParams(**params)
+    except ValidationError as error:
         return {
             'status': Status.REJECTED,
-            'message': f'Invalid downlink rate: {rate}',
+            # 'message': f'Invalid downlink rate: {rate}',
+            'message': str(error),
         }
 
-    update_downlink_rate(rate)
+    update_downlink_rate(validated_downlink_rate.rate)
 
     return {
         'status': Status.ACCEPTED,
-        'message': f'Downlink rate changed to {rate}',
+        'message': f'Downlink rate changed to {validated_downlink_rate.rate}',
     }
 
 
 def handle_add_fault(params: dict):
-    fault = params.get('fault')
-
-    if not fault:
+    try:
+        validated_fault = InjectFaultParams(**params)
+    except ValidationError as error:
         return {
             'status': Status.REJECTED,
-            'message': 'Fault name is required',
+            # 'message': 'Fault name is required',
+            'message': str(error),
         }
 
-    add_faults(fault)
+    add_faults(validated_fault.fault)
 
     return {
         'status': Status.ACCEPTED,
-        'message': f'Fault injected: {fault}',
+        'message': f'Fault injected: {validated_fault.fault}',
     }
 
 
