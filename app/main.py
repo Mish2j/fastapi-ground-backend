@@ -46,6 +46,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.telemetry_routes import router as telemetry_router
 from app.api.command_routes import router as command_router
 from app.api.event_routes import router as event_router
+from app.api.room_routes import router as room_router
 from app.realtime.websocket_routes import router as websocket_router
 
 app = FastAPI(
@@ -70,6 +71,7 @@ app.include_router(telemetry_router)
 app.include_router(command_router)
 app.include_router(event_router)
 app.include_router(websocket_router)
+app.include_router(room_router)
 
 
 # ------------ GET ------------
@@ -84,18 +86,3 @@ async def root():
 @app.get('/health')
 def health_check():
     return {'status': 'ok'}
-
-
-"""
-
-
-# ------------ websocket ------------
-
-
-
-GET /health
-GET /telemetry/latest
-GET /telemetry/history?point=battery_voltage&start=...&end=...
-WS  /ws/telemetry
-POST /commands
-"""
