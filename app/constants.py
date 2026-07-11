@@ -1,5 +1,7 @@
 from enum import StrEnum
 
+ERR_ROOM_NOT_FOUND = 'Room not found!'
+
 
 class Status(StrEnum):
     REJECTED = 'REJECTED'
