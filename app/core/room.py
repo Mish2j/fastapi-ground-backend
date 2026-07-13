@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import random
+import asyncio
 from fastapi import WebSocket
 
 from app.constants import DownlinkRate, Mode, Status, Command, Event
@@ -20,6 +21,8 @@ class MissionRoom:
     room_code: str
     name: str
     max_users: int
+    is_streaming: bool = False
+    stream_task: asyncio.Task | None = None
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
@@ -53,10 +56,8 @@ class MissionRoom:
 
     def get_latest_telemetry(self) -> dict:
         if not self.telemetry_history:
+            # May want to generate and return telemetry instead: return self.generate_telemetry()
             return None
-
-            # May want to generate and return telemetry instead
-            # return self.generate_telemetry()
 
         return self.telemetry_history[-1]
 
@@ -126,16 +127,16 @@ class MissionRoom:
         params = request.params
 
         if command == Command.SET_MODE:
-            result = self._set_mode(params)
+            result = self.__set_mode(params)
 
         elif command == Command.SET_DOWNLINK_RATE:
-            result = self._set_downlink_rate(params)
+            result = self.__set_downlink_rate(params)
 
         elif command == Command.INJECT_FAULT:
-            result = self._inject_fault(params)
+            result = self.__inject_fault(params)
 
         elif command == Command.CLEAR_FAULTS:
-            result = self._clear_faults()
+            result = self.__clear_faults()
 
         else:
             result = {
@@ -152,7 +153,7 @@ class MissionRoom:
 
         return result
 
-    def _set_mode(self, params: dict) -> dict:
+    def __set_mode(self, params: dict) -> dict:
         try:
             validated = SetModeParams(**params)
         except Exception as error:
@@ -168,7 +169,7 @@ class MissionRoom:
             'message': f'Mode changed to {validated.mode}',
         }
 
-    def _set_downlink_rate(self, params: dict) -> dict:
+    def __set_downlink_rate(self, params: dict) -> dict:
         try:
             validated = SetDownlinkRateParams(**params)
         except Exception as error:
@@ -184,7 +185,7 @@ class MissionRoom:
             'message': f'Downlink rate changed to {validated.rate}',
         }
 
-    def _inject_fault(self, params: dict) -> dict:
+    def __inject_fault(self, params: dict) -> dict:
         try:
             validated = InjectFaultParams(**params)
         except Exception as error:
@@ -201,7 +202,7 @@ class MissionRoom:
             'message': f'Fault injected: {validated.fault}',
         }
 
-    def _clear_faults(self) -> dict:
+    def __clear_faults(self) -> dict:
         self.satellite_state['faults'].clear()
 
         return {
@@ -228,3 +229,31 @@ class MissionRoom:
 
         for connection in disconnected:
             self.disconnect(connection)
+
+    async def start_stream(self) -> None:
+
+        if self.is_streaming:
+            return
+
+        self.is_streaming = True
+        self.stream_task = asyncio.create_task(self.__telemetry_loop())
+
+    async def stop_stream(self) -> None:
+        if not self.is_streaming:
+            return
+
+        self.is_streaming = False
+
+        if self.stream_task is not None:
+            self.stream_task.cancel()
+            self.stream_task = None
+
+    async def __telemetry_loop(self) -> None:
+        try:
+            while self.is_streaming:
+                telemetry = self.generate_telemetry()
+                await self.broadcast_telemetry(telemetry)
+                await asyncio.sleep(1)
+
+        except asyncio.CancelledError:
+            pass

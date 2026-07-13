@@ -7,7 +7,7 @@ from app.core.room import MissionRoom
 
 @dataclass
 class RoomManager:
-    rooms: dict[str, MissionRoom] = {}
+    rooms: dict[str, MissionRoom] = field(default_factory=dict)
 
     def __generate_room_code(self) -> str:
         while True:

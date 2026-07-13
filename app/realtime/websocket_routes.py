@@ -1,5 +1,3 @@
-import asyncio
-
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 # from app.realtime.connection_manager import manager
@@ -19,15 +17,17 @@ async def telemetry_websocket(websocket: WebSocket, room_code: str):
         return
 
     await room.connect(websocket)
+    await room.start_stream()
 
     try:
         while True:
-            telemetry = room.generate_telemetry()
-            await room.broadcast_telemetry(telemetry)
-            await asyncio.sleep(1)
+            await websocket.receive_text()
 
     except WebSocketDisconnect:
         room.disconnect(websocket)
+
+    if not room.connections:
+        await room.start_stream
 
     # Use connection_manager instead?
     # await manager.connect(websocket)
