@@ -21,23 +21,12 @@ async def telemetry_websocket(websocket: WebSocket, room_code: str):
 
     try:
         while True:
+            # wait for messages from the client & detect disconnection.
             await websocket.receive_text()
 
     except WebSocketDisconnect:
         room.disconnect(websocket)
 
     if not room.connections:
-        await room.start_stream
-
-    # Use connection_manager instead?
-    # await manager.connect(websocket)
-
-    # try:
-    #     while True:
-    #         telemetry = create_new_telemetry()
-    #         await manager.send_json(websocket, telemetry)
-    #         await asyncio.sleep(1)
-
-    # except WebSocketDisconnect:
-    #     manager.disconnect(websocket)
-    #     print('Client disconnected')
+        # Stop stream if no one is left in the room
+        await room.stop_stream()

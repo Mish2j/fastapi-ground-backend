@@ -16,6 +16,7 @@ MAX_TELEMETRY_HISTORY = 500
 MAX_EVENT_LOG = 200
 
 
+# TODO: add room cleanup
 @dataclass
 class MissionRoom:
     room_code: str
@@ -213,10 +214,14 @@ class MissionRoom:
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
         self.connections.append(websocket)
+        print(f'Client connected: {websocket.client.host}:{websocket.client.port}')
 
     def disconnect(self, websocket: WebSocket) -> None:
         if websocket in self.connections:
             self.connections.remove(websocket)
+            print(
+                f'Client disconnected: {websocket.client.host}:{websocket.client.port}'
+            )
 
     async def broadcast_telemetry(self, telemetry: dict) -> None:
         disconnected = []
@@ -252,7 +257,11 @@ class MissionRoom:
         try:
             while self.is_streaming:
                 telemetry = self.generate_telemetry()
+
+                # send to ALL connections
                 await self.broadcast_telemetry(telemetry)
+
+                # wait 1 second, repeat
                 await asyncio.sleep(1)
 
         except asyncio.CancelledError:
