@@ -1,6 +1,11 @@
 from fastapi import APIRouter, HTTPException
 
-from app.models.room import RoomResponse, JoinRoomRequest, CreateRoomRequest
+from app.models.room import (
+    JoinRoomResponse,
+    RoomResponse,
+    JoinRoomRequest,
+    CreateRoomRequest,
+)
 from app.services.room_service import room_manager
 
 from app.constants import ERR_ROOM_NOT_FOUND
@@ -24,10 +29,10 @@ def get_room_info(room_code: str):
     return room_manager.to_room_response(room)
 
 
-@router.post('/{room_code}/join', response_model=RoomResponse)
-def join_existing_room(room_code: str, request: JoinRoomRequest):
+@router.post('/{room_code}/join', response_model=JoinRoomResponse)
+def join_existing_room(room_code: str, request: JoinRoomRequest) -> JoinRoomResponse:
     try:
-        room_response = room_manager.join__room(room_code, request)
+        room_response = room_manager.join_room(room_code, request)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 

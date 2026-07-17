@@ -1,7 +1,12 @@
 from dataclasses import dataclass, field
 import random
 import string
-from app.models.room import CreateRoomRequest, JoinRoomRequest, RoomResponse
+from app.models.room import (
+    CreateRoomRequest,
+    JoinRoomRequest,
+    JoinRoomResponse,
+    RoomResponse,
+)
 from app.core.room import MissionRoom
 
 
@@ -32,9 +37,6 @@ class RoomManager:
     def get_room(self, room_code: str) -> MissionRoom | None:
         return self.rooms.get(room_code.upper())
 
-    def __generate_participant_id(self) -> str:
-        return ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
-
     def to_room_response(self, room: MissionRoom) -> RoomResponse:
         return RoomResponse(
             room_code=room.room_code,
@@ -43,7 +45,7 @@ class RoomManager:
             active_users=len(room.participants),
         )
 
-    def join__room(
+    def join_room(
         self, room_code: str, request: JoinRoomRequest
     ) -> RoomResponse | None:
         room = self.get_room(room_code)
@@ -51,13 +53,16 @@ class RoomManager:
         if room is None:
             return None
 
-        if len(room.participants) >= room.max_users:
-            raise ValueError('Room is full')
+        participant = room.join(request.display_name)
 
-        participant_id = self.__generate_participant_id()
-        room.join(participant_id, request.display_name)
-
-        return self.to_room_response(room)
+        return JoinRoomResponse(
+            room_code=room.room_code,
+            name=room.name,
+            max_users=room.max_users,
+            active_users=room.active_users(),
+            participant_id=participant.participant_id,
+            role=participant.role,
+        )
 
 
 room_manager = RoomManager()

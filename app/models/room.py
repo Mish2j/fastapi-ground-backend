@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from app.constants import ParticipantRole
+
 
 class CreateRoomRequest(BaseModel):
     name: str = Field(default='Mission Room')
@@ -15,3 +17,8 @@ class RoomResponse(BaseModel):
     name: str
     max_users: int
     active_users: int
+
+
+class JoinRoomResponse(RoomResponse):
+    participant_id: str
+    role: ParticipantRole

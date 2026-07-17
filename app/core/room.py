@@ -4,7 +4,8 @@ import random
 import asyncio
 from fastapi import WebSocket
 
-from app.constants import DownlinkRate, Mode, Status, Command, Event
+from app.constants import DownlinkRate, Mode, ParticipantRole, Status, Command, Event
+from app.core.participant import Participant
 from app.models.command import (
     CommandRequest,
     SetModeParams,
@@ -37,17 +38,27 @@ class MissionRoom:
     )
     telemetry_history: list[dict] = field(default_factory=list)
     event_log: list[dict] = field(default_factory=list)
-    participants: dict[str, str] = field(default_factory=dict)
+    participants: dict[str, Participant] = field(default_factory=dict)
     connections: list[WebSocket] = field(default_factory=list)
 
     def active_users(self) -> int:
         return len(self.participants)
 
-    def join(self, participant_id: str, display_name: str) -> None:
+    def join(self, display_name: str) -> Participant:
         if self.active_users() >= self.max_users:
             raise ValueError('Room is full')
 
-        self.participants[participant_id] = display_name
+        participant = Participant(display_name=display_name)
+
+        # first person = FLIGHT_DIRECTOR
+        if self.active_users() == 0:
+            participant.update_role(ParticipantRole.FLIGHT_DIRECTOR)
+
+        participant.connect()
+
+        self.participants[participant.participant_id] = participant
+
+        return participant
 
     def save_telemetry(self, telemetry: dict):
         if len(self.telemetry_history) > MAX_TELEMETRY_HISTORY:
