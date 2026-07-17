@@ -48,6 +48,7 @@ from app.api.command_routes import router as command_router
 from app.api.event_routes import router as event_router
 from app.api.room_routes import router as room_router
 from app.realtime.websocket_routes import router as websocket_router
+from app.api.participant_routes import router as participant_router
 
 app = FastAPI(
     title='Mission Telemetry Backend'
@@ -72,6 +73,7 @@ app.include_router(command_router)
 app.include_router(event_router)
 app.include_router(websocket_router)
 app.include_router(room_router)
+app.include_router(participant_router)
 
 
 # ------------ GET ------------
