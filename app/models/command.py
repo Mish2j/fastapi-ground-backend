@@ -1,11 +1,11 @@
 from pydantic import BaseModel, Field
 from typing import Any
 
-from app.constants import DownlinkRate, Mode
+from app.constants import Command, DownlinkRate, Mode
 
 
 class CommandRequest(BaseModel):
-    command: str
+    command: Command
     params: dict[str, Any] = Field(default_factory=dict)
 
 
