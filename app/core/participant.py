@@ -33,10 +33,6 @@ class Participant:
         self.display_name = display_name.strip()
 
     def update_role(self, role: ParticipantRole) -> None:
-        if self.role:
-            # already assigned a role, return
-            return
-
         # we should prob avoid having 1> participants of same role?
         self.role = role
 
