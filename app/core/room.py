@@ -12,9 +12,18 @@ from app.models.command import (
     SetDownlinkRateParams,
     InjectFaultParams,
 )
+from app.models.participant import ParticipantRoleRequest
 
 MAX_TELEMETRY_HISTORY = 500
 MAX_EVENT_LOG = 200
+
+ROLE_LIMITS: dict[ParticipantRole, int | None] = {
+    ParticipantRole.FLIGHT_DIRECTOR: 1,
+    ParticipantRole.GROUND_OPERATOR: 2,
+    ParticipantRole.TELEMETRY_OFFICER: 2,
+    ParticipantRole.PAYLOAD_OFFICER: 1,
+    ParticipantRole.OBSERVER: None,  # unlimited up to max_users
+}
 
 
 # TODO: add room cleanup
@@ -173,6 +182,45 @@ class MissionRoom:
         )
 
         return result
+
+    # Flight Director assigns roles manually
+    def assign_role(self, request: ParticipantRoleRequest, participant_id: str) -> None:
+        new_role = request.role
+        requester = self.participants.get(request.requester_id)
+        participant = self.participants.get(participant_id)
+
+        if requester is None:
+            raise ValueError('Requester not found')
+
+        if participant is None:
+            raise ValueError('Participant not found')
+
+        if requester.participant_id == participant_id:
+            raise ValueError('Flight Director cannot assign role to themselves')
+
+        if not requester.can_assign_roles():
+            raise ValueError('Only Flight Director can assign roles')
+
+        # if the participant already has the requested role, do nothing
+        if participant.role == new_role:
+            return participant
+
+        if new_role == ParticipantRole.FLIGHT_DIRECTOR and any(
+            p.role == ParticipantRole.FLIGHT_DIRECTOR
+            for p in self.participants.values()
+        ):
+            raise ValueError('Room already has a Flight Director')
+
+        limit = ROLE_LIMITS[new_role]
+        if limit is not None:
+            current_count = sum(
+                1 for p in self.participants.values() if p.role == new_role
+            )
+            if current_count >= limit:
+                raise ValueError(f'Role limit reached for {new_role}')
+
+        participant.update_role(new_role)
+        return participant
 
     def __set_mode(self, params: dict) -> dict:
         try:

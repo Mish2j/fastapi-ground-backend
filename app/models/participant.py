@@ -9,3 +9,8 @@ class ParticipantResponse(BaseModel):
     role: ParticipantRole
     is_connected: bool
     joined_at: str
+
+
+class ParticipantRoleRequest(BaseModel):
+    requester_id: str
+    role: ParticipantRole

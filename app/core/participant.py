@@ -33,11 +33,19 @@ class Participant:
         self.display_name = display_name.strip()
 
     def update_role(self, role: ParticipantRole) -> None:
-        # we should prob avoid having 1> participants of same role?
         self.role = role
 
     def can_send_commands(self) -> bool:
         return self.role in {
             ParticipantRole.FLIGHT_DIRECTOR,
             ParticipantRole.GROUND_OPERATOR,
+        }
+
+    def can_assign_roles(self) -> bool:
+        return self.role == ParticipantRole.FLIGHT_DIRECTOR
+
+    def can_view_payload(self) -> bool:
+        return self.role in {
+            ParticipantRole.FLIGHT_DIRECTOR,
+            ParticipantRole.PAYLOAD_OFFICER,
         }
