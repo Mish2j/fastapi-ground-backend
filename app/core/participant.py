@@ -39,3 +39,9 @@ class Participant:
 
         # we should prob avoid having 1> participants of same role?
         self.role = role
+
+    def can_send_commands(self) -> bool:
+        return self.role in {
+            ParticipantRole.FLIGHT_DIRECTOR,
+            ParticipantRole.GROUND_OPERATOR,
+        }

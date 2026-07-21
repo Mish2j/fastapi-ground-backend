@@ -123,17 +123,26 @@ class MissionRoom:
         return self.event_log[-limit:]
 
     def execute_command(self, request: CommandRequest) -> dict:
-        # command = request.command
-        # result = ex_cmd(request)
+        participant = self.participants.get(request.participant_id)
 
-        # add_event(
-        #     event_type=Event.COMMAND,
-        #     command=command,
-        #     status=result['status'],
-        #     message=result['message'],
-        # )
+        # verify participant before running command
+        if participant is None:
+            return {
+                'status': Status.REJECTED,
+                'message': 'Participant not found',
+            }
 
-        # return result
+        if not participant.is_connected:
+            return {
+                'status': Status.REJECTED,
+                'message': 'Participant is not connected',
+            }
+
+        if not participant.can_send_commands():
+            return {
+                'status': Status.REJECTED,
+                'message': f'{participant.role} is not allowed to send commands',
+            }
 
         command = request.command
         params = request.params
@@ -160,7 +169,7 @@ class MissionRoom:
             event_type=Event.COMMAND,
             command=command,
             status=result['status'],
-            message=result['message'],
+            message=f'{participant.display_name}: {result["message"]}',
         )
 
         return result
