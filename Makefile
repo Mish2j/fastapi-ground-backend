@@ -8,6 +8,9 @@ dev:
 serve:
 	python3 -m http.server 5173
 
+test:
+	pytest -v
+
 format:
 	source .venv/bin/activate && ruff format .
 
