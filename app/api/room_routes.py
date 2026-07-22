@@ -40,3 +40,30 @@ def join_existing_room(room_code: str, request: JoinRoomRequest) -> JoinRoomResp
         raise HTTPException(status_code=404, detail=ERR_ROOM_NOT_FOUND)
 
     return room_response
+
+
+@router.get('')
+def list_rooms():
+    return [
+        {
+            'room_code': room.room_code,
+            'name': room.name,
+            'max_users': room.max_users,
+            'connected_users': room.connected_users(),
+            'total_participants': len(room.participants),
+            'is_streaming': room.is_streaming,
+            'last_activity_at': room.last_activity_at.isoformat(),
+            'is_inactive': room.is_inactive(),
+        }
+        for room in room_manager.list_rooms()
+    ]
+
+
+@router.delete('/inactive')
+def cleanup_inactive_rooms(timeout_minutes: int = 30) -> dict:
+    removed_rooms = room_manager.cleanup_inactive_rooms(timeout_minutes)
+
+    return {
+        'removed_count': len(removed_rooms),
+        'removed_rooms': removed_rooms,
+    }

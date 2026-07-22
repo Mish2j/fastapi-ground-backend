@@ -1,47 +1,12 @@
 """
 Description:
 Python FastAPI ground-software simulator with modular telemetry generation, command validation, event logging, WebSocket broadcasting, and REST APIs for dashboard (later Open MCT) integration.
-
-
-1. Backend creates telemetry
-2. Backend sends telemetry through WebSocket
-3. Frontend displays telemetry
-4. User sends command through REST
-5. Backend validates command
-6. Backend changes simulator state
-7. New telemetry reflects that change
-8. Event log records what happened
-
-Real-time flow:
-simulator.py
-  ↓ generates telemetry
-telemetry_service.py
-  ↓ saves latest/history
-connection_manager.py
-  ↓ broadcasts to clients
-websocket_routes.py
-  ↓ sends to frontend/Open MCT
-
-Command flow:
-POST /commands
-  ↓
-command_routes.py
-  ↓
-command_service.py
-  ↓
-command_handler.py
-  ↓
-satellite_state.py updates
-  ↓
-event_log.py records event
-  ↓
-next telemetry shows new state
 """
 
-# FastAPI is a Python class that provides all the functionality for your API.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+import asyncio
+from contextlib import asynccontextmanager
 
 from app.api.telemetry_routes import router as telemetry_router
 from app.api.command_routes import router as command_router
@@ -50,9 +15,27 @@ from app.api.room_routes import router as room_router
 from app.realtime.websocket_routes import router as websocket_router
 from app.api.participant_routes import router as participant_router
 
-app = FastAPI(
-    title='Mission Telemetry Backend'
-)  # app variable will be an "instance" of the class FastAPI
+from app.constants import ROOM_CLEANUP_INTERVAL_SECONDS
+from app.services.room_service import room_manager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # runs when server starts
+    cleanup_task = asyncio.create_task(cleanup_rooms_loop())
+
+    yield  # server is running here
+
+    # runs when server stops
+    cleanup_task.cancel()
+
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        pass
+
+
+app = FastAPI(title='Mission Telemetry Backend', lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -76,15 +59,17 @@ app.include_router(room_router)
 app.include_router(participant_router)
 
 
-# ------------ GET ------------
-# path operation function
-@app.get(
-    '/'
-)  # tells FastAPI that the function right below is in charge of handling requests that go to the path /
+@app.get('/')
 async def root():
     return {'message': 'Mission Telemetry Backend'}
 
 
-@app.get('/health')
-def health_check():
-    return {'status': 'ok'}
+async def cleanup_rooms_loop() -> None:
+    while True:
+        print('Loop running')
+        removed_rooms = room_manager.cleanup_inactive_rooms()
+
+        if removed_rooms:
+            print(f'Removed inactive rooms: {removed_rooms}')
+
+        await asyncio.sleep(ROOM_CLEANUP_INTERVAL_SECONDS)

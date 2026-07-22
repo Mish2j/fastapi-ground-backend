@@ -5,6 +5,7 @@ from app.constants import Command, DownlinkRate, Mode
 
 
 class CommandRequest(BaseModel):
+    participant_id: str
     command: Command
     params: dict[str, Any] = Field(default_factory=dict)
 

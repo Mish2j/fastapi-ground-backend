@@ -1,7 +1,19 @@
+from datetime import datetime, timedelta, timezone
+
+import pytest
 from fastapi.testclient import TestClient
+
 from app.main import app
+from app.services.room_service import room_manager
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def clear_rooms():
+    room_manager.rooms.clear()
+    yield
+    room_manager.rooms.clear()
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -121,3 +133,97 @@ def test_join_room_full():
         f'/rooms/{room["room_code"]}/join', json={'display_name': 'Bob'}
     )
     assert response.status_code == 400
+
+
+# ── GET /rooms ────────────────────────────────────────────────────────────────
+
+
+def test_list_rooms_empty():
+    response = client.get('/rooms')
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_rooms_returns_room_details():
+    room = create_room(name='Apollo 1', max_users=6)
+    response = client.get('/rooms')
+    assert response.status_code == 200
+
+    entry = next(r for r in response.json() if r['room_code'] == room['room_code'])
+    assert entry['name'] == 'Apollo 1'
+    assert entry['max_users'] == 6
+    assert entry['connected_users'] == 0
+    assert entry['total_participants'] == 0
+    assert entry['is_streaming'] is False
+    assert entry['is_inactive'] is False
+    assert 'last_activity_at' in entry
+
+
+def test_list_rooms_reflects_joined_participants():
+    room = create_room()
+    join_room(room['room_code'], display_name='Alice')
+
+    entry = next(r for r in client.get('/rooms').json() if r['room_code'] == room['room_code'])
+    assert entry['connected_users'] == 1
+    assert entry['total_participants'] == 1
+    assert entry['is_inactive'] is False
+
+
+# ── DELETE /rooms/inactive ────────────────────────────────────────────────────
+
+
+def test_cleanup_inactive_rooms_removes_stale_empty_room():
+    room = create_room()
+    mission_room = room_manager.get_room(room['room_code'])
+    mission_room.last_activity_at = datetime.now(timezone.utc) - timedelta(minutes=31)
+
+    response = client.delete('/rooms/inactive')
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data['removed_count'] == 1
+    assert data['removed_rooms'] == [room['room_code']]
+
+    assert client.get(f'/rooms/{room["room_code"]}').status_code == 404
+
+
+def test_cleanup_inactive_rooms_skips_recent_room():
+    room = create_room()
+
+    response = client.delete('/rooms/inactive')
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data['removed_count'] == 0
+    assert data['removed_rooms'] == []
+
+    assert client.get(f'/rooms/{room["room_code"]}').status_code == 200
+
+
+def test_cleanup_inactive_rooms_skips_room_with_connected_users():
+    room = create_room()
+    join_room(room['room_code'], display_name='Alice')
+
+    mission_room = room_manager.get_room(room['room_code'])
+    mission_room.last_activity_at = datetime.now(timezone.utc) - timedelta(minutes=31)
+
+    response = client.delete('/rooms/inactive')
+    assert response.status_code == 200
+
+    data = response.json()
+    assert room['room_code'] not in data['removed_rooms']
+    assert client.get(f'/rooms/{room["room_code"]}').status_code == 200
+
+
+def test_cleanup_inactive_rooms_respects_timeout_minutes():
+    room = create_room()
+    mission_room = room_manager.get_room(room['room_code'])
+    mission_room.last_activity_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+
+    response = client.delete('/rooms/inactive?timeout_minutes=10')
+    assert response.status_code == 200
+    assert room['room_code'] not in response.json()['removed_rooms']
+
+    response = client.delete('/rooms/inactive?timeout_minutes=1')
+    assert response.status_code == 200
+    assert room['room_code'] in response.json()['removed_rooms']

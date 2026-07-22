@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import random
 import asyncio
 from fastapi import WebSocket
@@ -12,18 +12,29 @@ from app.models.command import (
     SetDownlinkRateParams,
     InjectFaultParams,
 )
+from app.models.participant import ParticipantRoleRequest
 
 MAX_TELEMETRY_HISTORY = 500
 MAX_EVENT_LOG = 200
 
+ROLE_LIMITS: dict[ParticipantRole, int | None] = {
+    ParticipantRole.FLIGHT_DIRECTOR: 1,
+    ParticipantRole.GROUND_OPERATOR: 2,
+    ParticipantRole.TELEMETRY_OFFICER: 2,
+    ParticipantRole.PAYLOAD_OFFICER: 1,
+    ParticipantRole.OBSERVER: None,  # unlimited up to max_users
+}
 
-# TODO: add room cleanup
+
 @dataclass
 class MissionRoom:
     room_code: str
     name: str
     max_users: int
     is_streaming: bool = False
+    last_activity_at: datetime = field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
     stream_task: asyncio.Task | None = None
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
@@ -41,6 +52,14 @@ class MissionRoom:
     participants: dict[str, Participant] = field(default_factory=dict)
     connections: list[WebSocket] = field(default_factory=list)
 
+    def connected_users(self) -> int:
+        return sum(
+            1 for participant in self.participants.values() if participant.is_connected
+        )
+
+    def has_connected_users(self) -> bool:
+        return self.connected_users() > 0
+
     def active_users(self) -> int:
         return len(self.participants)
 
@@ -57,6 +76,8 @@ class MissionRoom:
         participant.connect()
 
         self.participants[participant.participant_id] = participant
+
+        self.touch()
 
         return participant
 
@@ -123,17 +144,27 @@ class MissionRoom:
         return self.event_log[-limit:]
 
     def execute_command(self, request: CommandRequest) -> dict:
-        # command = request.command
-        # result = ex_cmd(request)
+        self.touch()
+        participant = self.participants.get(request.participant_id)
 
-        # add_event(
-        #     event_type=Event.COMMAND,
-        #     command=command,
-        #     status=result['status'],
-        #     message=result['message'],
-        # )
+        # verify participant before running command
+        if participant is None:
+            return {
+                'status': Status.REJECTED,
+                'message': 'Participant not found',
+            }
 
-        # return result
+        if not participant.is_connected:
+            return {
+                'status': Status.REJECTED,
+                'message': 'Participant is not connected',
+            }
+
+        if not participant.can_execute(request.command):
+            return {
+                'status': Status.REJECTED,
+                'message': f'{participant.role} is not allowed to execute {request.command}',
+            }
 
         command = request.command
         params = request.params
@@ -160,10 +191,50 @@ class MissionRoom:
             event_type=Event.COMMAND,
             command=command,
             status=result['status'],
-            message=result['message'],
+            message=f'{participant.display_name}: {result["message"]}',
         )
 
         return result
+
+    # Flight Director assigns roles manually
+    def assign_role(self, request: ParticipantRoleRequest, participant_id: str) -> None:
+        self.touch()
+        new_role = request.role
+        requester = self.participants.get(request.requester_id)
+        participant = self.participants.get(participant_id)
+
+        if requester is None:
+            raise ValueError('Requester not found')
+
+        if participant is None:
+            raise ValueError('Participant not found')
+
+        if requester.participant_id == participant_id:
+            raise ValueError('Flight Director cannot assign role to themselves')
+
+        if not requester.can_assign_roles():
+            raise ValueError('Only Flight Director can assign roles')
+
+        # if the participant already has the requested role, do nothing
+        if participant.role == new_role:
+            return participant
+
+        if new_role == ParticipantRole.FLIGHT_DIRECTOR and any(
+            p.role == ParticipantRole.FLIGHT_DIRECTOR
+            for p in self.participants.values()
+        ):
+            raise ValueError('Room already has a Flight Director')
+
+        limit = ROLE_LIMITS[new_role]
+        if limit is not None:
+            current_count = sum(
+                1 for p in self.participants.values() if p.role == new_role
+            )
+            if current_count >= limit:
+                raise ValueError(f'Role limit reached for {new_role}')
+
+        participant.update_role(new_role)
+        return participant
 
     def __set_mode(self, params: dict) -> dict:
         try:
@@ -222,10 +293,22 @@ class MissionRoom:
             'message': 'All faults cleared',
         }
 
+    def is_inactive(self, timeout_minutes: int = 30) -> bool:
+        if self.has_connected_users():
+            return False
+
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=timeout_minutes)
+        return self.last_activity_at < cutoff
+
+    def touch(self) -> None:
+        self.last_activity_at = datetime.now(timezone.utc)
+
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
         self.connections.append(websocket)
         print(f'Client connected: {websocket.client.host}:{websocket.client.port}')
+
+        self.touch()
 
     def disconnect(self, websocket: WebSocket) -> None:
         if websocket in self.connections:
@@ -233,6 +316,8 @@ class MissionRoom:
             print(
                 f'Client disconnected: {websocket.client.host}:{websocket.client.port}'
             )
+
+        self.touch()
 
     async def broadcast_telemetry(self, telemetry: dict) -> None:
         disconnected = []
