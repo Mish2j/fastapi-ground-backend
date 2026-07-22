@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import random
 import asyncio
 from fastapi import WebSocket
@@ -26,13 +26,15 @@ ROLE_LIMITS: dict[ParticipantRole, int | None] = {
 }
 
 
-# TODO: add room cleanup
 @dataclass
 class MissionRoom:
     room_code: str
     name: str
     max_users: int
     is_streaming: bool = False
+    last_activity_at: datetime = field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
     stream_task: asyncio.Task | None = None
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
@@ -50,6 +52,14 @@ class MissionRoom:
     participants: dict[str, Participant] = field(default_factory=dict)
     connections: list[WebSocket] = field(default_factory=list)
 
+    def connected_users(self) -> int:
+        return sum(
+            1 for participant in self.participants.values() if participant.is_connected
+        )
+
+    def has_connected_users(self) -> bool:
+        return self.connected_users() > 0
+
     def active_users(self) -> int:
         return len(self.participants)
 
@@ -66,6 +76,8 @@ class MissionRoom:
         participant.connect()
 
         self.participants[participant.participant_id] = participant
+
+        self.touch()
 
         return participant
 
@@ -132,6 +144,7 @@ class MissionRoom:
         return self.event_log[-limit:]
 
     def execute_command(self, request: CommandRequest) -> dict:
+        self.touch()
         participant = self.participants.get(request.participant_id)
 
         # verify participant before running command
@@ -185,6 +198,7 @@ class MissionRoom:
 
     # Flight Director assigns roles manually
     def assign_role(self, request: ParticipantRoleRequest, participant_id: str) -> None:
+        self.touch()
         new_role = request.role
         requester = self.participants.get(request.requester_id)
         participant = self.participants.get(participant_id)
@@ -279,10 +293,22 @@ class MissionRoom:
             'message': 'All faults cleared',
         }
 
+    def is_inactive(self, timeout_minutes: int = 30) -> bool:
+        if self.has_connected_users():
+            return False
+
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=timeout_minutes)
+        return self.last_activity_at < cutoff
+
+    def touch(self) -> None:
+        self.last_activity_at = datetime.now(timezone.utc)
+
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
         self.connections.append(websocket)
         print(f'Client connected: {websocket.client.host}:{websocket.client.port}')
+
+        self.touch()
 
     def disconnect(self, websocket: WebSocket) -> None:
         if websocket in self.connections:
@@ -290,6 +316,8 @@ class MissionRoom:
             print(
                 f'Client disconnected: {websocket.client.host}:{websocket.client.port}'
             )
+
+        self.touch()
 
     async def broadcast_telemetry(self, telemetry: dict) -> None:
         disconnected = []
