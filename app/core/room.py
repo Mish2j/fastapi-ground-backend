@@ -147,10 +147,10 @@ class MissionRoom:
                 'message': 'Participant is not connected',
             }
 
-        if not participant.can_send_commands():
+        if not participant.can_execute(request.command):
             return {
                 'status': Status.REJECTED,
-                'message': f'{participant.role} is not allowed to send commands',
+                'message': f'{participant.role} is not allowed to execute {request.command}',
             }
 
         command = request.command

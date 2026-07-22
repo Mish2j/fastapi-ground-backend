@@ -3,7 +3,25 @@ from datetime import datetime, timezone
 import random
 import string
 
-from app.constants import ParticipantRole
+from app.constants import Command, ParticipantRole
+
+
+COMMAND_PERMISSIONS = {
+    ParticipantRole.FLIGHT_DIRECTOR: {
+        Command.SET_MODE,
+        Command.SET_DOWNLINK_RATE,
+        Command.INJECT_FAULT,
+        Command.CLEAR_FAULTS,
+    },
+    ParticipantRole.GROUND_OPERATOR: {
+        Command.SET_MODE,
+        Command.SET_DOWNLINK_RATE,
+        Command.CLEAR_FAULTS,
+    },
+    ParticipantRole.TELEMETRY_OFFICER: set(),
+    ParticipantRole.PAYLOAD_OFFICER: set(),
+    ParticipantRole.OBSERVER: set(),
+}
 
 
 def generate_participant_id() -> str:
@@ -35,11 +53,9 @@ class Participant:
     def update_role(self, role: ParticipantRole) -> None:
         self.role = role
 
-    def can_send_commands(self) -> bool:
-        return self.role in {
-            ParticipantRole.FLIGHT_DIRECTOR,
-            ParticipantRole.GROUND_OPERATOR,
-        }
+    def can_execute(self, command: Command) -> bool:
+        """Command permissions by role"""
+        return command in COMMAND_PERMISSIONS[self.role]
 
     def can_assign_roles(self) -> bool:
         return self.role == ParticipantRole.FLIGHT_DIRECTOR
