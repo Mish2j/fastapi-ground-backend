@@ -1,8 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
-# from app.services.event_service import get_events
-from app.services.room_service import room_manager
 from app.constants import ERR_ROOM_NOT_FOUND
+from app.managers.room_manager import room_manager
 
 router = APIRouter(prefix='/rooms/{room_code}/events', tags=['Events'])
 

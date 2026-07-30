@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 
-from app.constants import ERR_ROOM_NOT_FOUND, ParticipantRole
+from app.constants import ERR_ROOM_NOT_FOUND
+from app.managers.room_manager import room_manager
 from app.models.participant import ParticipantResponse, ParticipantRoleRequest
-from app.services.room_service import room_manager
 
 router = APIRouter(prefix='/rooms', tags=['Participants'])
 
@@ -39,7 +39,9 @@ def update_participant_role(
         raise HTTPException(status_code=404, detail=ERR_ROOM_NOT_FOUND)
 
     try:
-        participant = room.assign_role(request, participant_id)
+        participant = room.assign_role(
+            request.requester_id, participant_id, request.role
+        )
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 

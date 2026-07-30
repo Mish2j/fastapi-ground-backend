@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.services.room_service import room_manager
+from app.managers.room_manager import room_manager
 
 client = TestClient(app)
 
@@ -163,7 +163,9 @@ def test_list_rooms_reflects_joined_participants():
     room = create_room()
     join_room(room['room_code'], display_name='Alice')
 
-    entry = next(r for r in client.get('/rooms').json() if r['room_code'] == room['room_code'])
+    entry = next(
+        r for r in client.get('/rooms').json() if r['room_code'] == room['room_code']
+    )
     assert entry['connected_users'] == 1
     assert entry['total_participants'] == 1
     assert entry['is_inactive'] is False

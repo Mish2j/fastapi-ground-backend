@@ -1,10 +1,9 @@
 from fastapi import APIRouter, HTTPException
 
-from app.models.command import CommandRequest
-# from app.services.command_service import execute_command
-
-from app.services.room_service import room_manager
 from app.constants import ERR_ROOM_NOT_FOUND
+from app.managers.room_manager import room_manager
+from app.models.command import CommandRequest
+from app.services.command_service import command_service
 
 router = APIRouter(prefix='/rooms/{room_code}/commands', tags=['Commands'])
 
@@ -16,4 +15,16 @@ def send_command(room_code: str, request: CommandRequest):
     if room is None:
         raise HTTPException(status_code=404, detail=ERR_ROOM_NOT_FOUND)
 
-    return room.execute_command(request)
+    participant = room.get_participant(request.participant_id)
+
+    if participant is None:
+        raise HTTPException(
+            status_code=404,
+            detail='Participant not found',
+        )
+
+    return command_service.execute(
+        room,
+        participant,
+        request,
+    )

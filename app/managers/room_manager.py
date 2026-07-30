@@ -1,15 +1,15 @@
-from dataclasses import dataclass, field
 import random
 import string
+from dataclasses import dataclass, field
+
+from app.constants import ROOM_INACTIVITY_TIMEOUT_MINUTES
+from app.core.room import MissionRoom
 from app.models.room import (
     CreateRoomRequest,
     JoinRoomRequest,
     JoinRoomResponse,
     RoomResponse,
 )
-from app.core.room import MissionRoom
-
-from app.constants import ROOM_INACTIVITY_TIMEOUT_MINUTES
 
 
 @dataclass
@@ -69,21 +69,17 @@ class RoomManager:
     def list_rooms(self) -> list[MissionRoom]:
         return list(self.rooms.values())
 
-    def cleanup_inactive_rooms(self, timeout_minutes: int = 30) -> list[str]:
+    def remove_room(self, room_code: str) -> None:
+        self.rooms.pop(room_code, None)
+
+    def find_inactive_rooms(
+        self, timeout_minutes: int = ROOM_INACTIVITY_TIMEOUT_MINUTES
+    ) -> list[str]:
         inactive_room_codes = [
             room_code
             for room_code, room in self.rooms.items()
             if room.is_inactive(timeout_minutes)
         ]
-
-        for room_code in inactive_room_codes:
-            room = self.rooms[room_code]
-
-            if room.is_streaming:
-                # room.stop_stream()
-                room.is_streaming = False
-
-            del self.rooms[room_code]
 
         return inactive_room_codes
 
