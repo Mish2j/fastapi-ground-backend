@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
-from app.constants import ParticipantRole
+from app.constants import ERR_PARTICIPANT_NOT_FOUND, ParticipantRole
 from app.core.participant import Participant
 from app.core.state import MissionState
 from app.models.telemetry import Telemetry
@@ -48,6 +48,15 @@ class MissionRoom:
     def get_participant(self, participant_id: str) -> Participant | None:
         return self.participants.get(participant_id)
 
+    def __require_participant(self, participant_id: str) -> Participant:
+        participant = self.get_participant(participant_id)
+
+        if participant is None:
+            raise ValueError(ERR_PARTICIPANT_NOT_FOUND)
+
+        return participant
+
+    # TODO: handle rejoin
     def join(self, display_name: str) -> Participant:
         if self.active_users() >= self.max_users:
             raise ValueError('Room is full')
@@ -63,6 +72,20 @@ class MissionRoom:
         self.participants[participant.participant_id] = participant
 
         self.touch()
+
+        return participant
+
+    def disconnect_participant(self, participant_id: str) -> Participant:
+        participant = self.__require_participant(participant_id)
+
+        participant.disconnect()
+        self.touch()
+
+        return participant
+
+    def remove_participant(self, participant_id: str) -> Participant:
+        participant = self.disconnect_participant(participant_id)
+        self.participants.pop(participant_id)
 
         return participant
 
@@ -122,7 +145,7 @@ class MissionRoom:
             raise ValueError('Requester not found')
 
         if participant is None:
-            raise ValueError('Participant not found')
+            raise ValueError(ERR_PARTICIPANT_NOT_FOUND)
 
         if requester.participant_id == participant_id:
             raise ValueError('Flight Director cannot assign role to themselves')

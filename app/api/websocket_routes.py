@@ -40,7 +40,7 @@ async def telemetry_websocket(
             await websocket.receive_text()
 
     except WebSocketDisconnect:
-        pass
+        room.disconnect_participant(participant_id)
 
     finally:
         participant.disconnect()

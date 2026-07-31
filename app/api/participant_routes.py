@@ -26,6 +26,25 @@ def get_room_participants(room_code: str) -> list[ParticipantResponse]:
     ]
 
 
+@router.delete('/{room_code}/participants/{participant_id}')
+def leave_room_participant(room_code: str, participant_id: str) -> dict:
+
+    room = room_manager.get_room(room_code)
+
+    if room is None:
+        raise HTTPException(status_code=404, detail=ERR_ROOM_NOT_FOUND)
+
+    try:
+        room_manager.leave_room(room_code, participant_id)
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+    return {
+        'room_code': room_code,
+        'participant_id': participant_id,
+    }
+
+
 @router.patch(
     '/{room_code}/participants/{participant_id}/role',
     response_model=ParticipantResponse,

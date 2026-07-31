@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from app.constants import ERR_ROOM_NOT_FOUND
+from app.constants import ERR_PARTICIPANT_NOT_FOUND, ERR_ROOM_NOT_FOUND
 from app.managers.room_manager import room_manager
 from app.models.command import CommandRequest
 from app.services.command_service import command_service
@@ -20,7 +20,7 @@ def send_command(room_code: str, request: CommandRequest):
     if participant is None:
         raise HTTPException(
             status_code=404,
-            detail='Participant not found',
+            detail=ERR_PARTICIPANT_NOT_FOUND,
         )
 
     return command_service.execute(

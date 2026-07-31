@@ -66,6 +66,17 @@ class RoomManager:
             role=participant.role,
         )
 
+    def leave_room(self, room_code: str, participant_id: str) -> None:
+        room = self.get_room(room_code)
+
+        if room is None:
+            return
+
+        room.remove_participant(participant_id)
+
+        # we need to decide what happens if FLIGHT_DIRECTOR leaves the room
+        # first person = FLIGHT_DIRECTOR
+
     def list_rooms(self) -> list[MissionRoom]:
         return list(self.rooms.values())
 
