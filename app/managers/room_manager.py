@@ -49,7 +49,7 @@ class RoomManager:
 
     def join_room(
         self, room_code: str, request: JoinRoomRequest
-    ) -> RoomResponse | None:
+    ) -> JoinRoomResponse | None:
         room = self.get_room(room_code)
 
         if room is None:
