@@ -2,6 +2,17 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 from app.constants import DownlinkRate, Mode
+
+# from app.core.subsystems.attitude import AttitudeState
+# from app.core.subsystems.communications import CommunicationsSubsystem
+# from app.core.subsystems.computer import ComputerState
+from app.core.subsystems.orbit.orbit import OrbitState
+
+# from app.core.subsystems.payload import PayloadState
+from app.core.subsystems.orbit.orbit_provider import OrbitProvider
+from app.core.subsystems.power import PowerState
+from app.core.subsystems.thermal import ThermalState
+from app.managers.fault_manager import FaultManager
 from app.models.fault import Fault
 
 
@@ -9,25 +20,16 @@ from app.models.fault import Fault
 class MissionState:
     satellite_id: str
 
-    # Position
-    latitude: float = 0.0
-    longitude: float = 0.0
-    altitude_km: float = 550.0
-
-    # Power
-    battery_voltage: float = 28.0
-    battery_percent: float = 100.0
-
-    # Health
-    temperature_c: float = 24.0
-    signal_strength_db: float = -70.0
-
-    # Mission configuration
-    mode: Mode = Mode.NOMINAL
-    downlink_rate: DownlinkRate = DownlinkRate.MEDIUM
-
-    # Faults
-    faults: list[Fault] = field(default_factory=list)
+    power: PowerState = field(default_factory=PowerState)
+    thermal: ThermalState = field(default_factory=ThermalState)
+    # communications: CommunicationsState = field(
+    #     default_factory=CommunicationsState
+    # )
+    orbit: OrbitState = field(default_factory=OrbitState)
+    # attitude: AttitudeState = field(default_factory=AttitudeState)
+    # payload: PayloadState = field(default_factory=PayloadState)
+    # computer: ComputerState = field(default_factory=ComputerState)
+    faults: FaultManager = field(default_factory=FaultManager)
 
     # Time
     simulation_time: datetime = field(default_factory=lambda: datetime.now(UTC))
@@ -35,46 +37,34 @@ class MissionState:
 
     def reset(self) -> None:
         """Restore spacecraft to nominal state."""
-        self.mode = Mode.NOMINAL
-        self.downlink_rate = DownlinkRate.MEDIUM
 
-        self.battery_voltage = 28.0
-        self.battery_percent = 100.0
+        # now = datetime.now(UTC)
+        # self.simulation_time = now
+        # self.last_updated_at = now
 
-        self.temperature_c = 24.0
-        self.signal_strength_db = -70.0
-
-        self.latitude = 0.0
-        self.longitude = 0.0
-        self.altitude_km = 550.0
-
-        self.faults.clear()
-
-        now = datetime.now(UTC)
-        self.simulation_time = now
-        self.last_updated_at = now
-
-    def update(self, delta_seconds: int = 1) -> None:
-        """Advance the spacecraft simulation."""
+    def update(self, orbit_provider: OrbitProvider, delta_seconds: float = 1.0) -> None:
         self.simulation_time += timedelta(seconds=delta_seconds)
+
+        self.faults.update(delta_seconds)
+
+        self.power.update(delta_seconds, self.faults)
+        self.thermal.update(delta_seconds, self.power, self.faults)
+        self.orbit = orbit_provider.calculate(self.simulation_time)
+        # self.communications.update(self, delta_seconds)
+        # self.payload.update(self, delta_seconds)
+        # self.attitude.update(self, delta_seconds)
+        # self.computer.update(self, delta_seconds)
+
         self.last_updated_at = datetime.now(UTC)
 
-        # Future simulation logic:
-        # - battery drain
-        # - orbit propagation
-        # - temperature changes
-        # - signal strength changes
-        # - apply active faults
-
     def set_mode(self, mode: Mode) -> None:
-        self.mode = mode
+        pass
 
     def set_downlink_rate(self, rate: DownlinkRate) -> None:
-        self.downlink_rate = rate
+        pass
 
     def inject_fault(self, fault: Fault) -> None:
-        if fault not in self.faults:
-            self.faults.append(fault)
+        pass
 
     def clear_faults(self) -> None:
-        self.faults.clear()
+        pass

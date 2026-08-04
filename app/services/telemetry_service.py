@@ -18,13 +18,14 @@ class TelemetryService:
             satellite_id=mission_state.satellite_id,
             mode=mission_state.mode,
             downlink_rate=mission_state.downlink_rate,
-            battery_voltage=mission_state.battery_voltage,
-            temperature_c=mission_state.temperature_c,
+            battery_percent=mission_state.power.battery_percent,
+            battery_voltage=mission_state.power.battery_voltage,
+            temperature_c=mission_state.thermal.temperature_c,
             signal_strength_db=mission_state.signal_strength_db,
-            latitude=mission_state.latitude,
-            longitude=mission_state.longitude,
-            altitude_km=mission_state.altitude_km,
-            faults=mission_state.faults,
+            latitude=mission_state.orbit.latitude,
+            longitude=mission_state.orbit.longitude,
+            altitude_km=mission_state.orbit.altitude_km,
+            faults=mission_state.faults.active_faults,
         )
 
     async def start_stream(self, room: MissionRoom) -> None:

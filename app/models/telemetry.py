@@ -11,6 +11,7 @@ class Telemetry(BaseModel):
     satellite_id: str
     mode: Mode
     downlink_rate: DownlinkRate
+    battery_percent: float
     battery_voltage: float
     temperature_c: float
     signal_strength_db: float
