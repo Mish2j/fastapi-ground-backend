@@ -71,18 +71,16 @@ class MissionState:
 
     def __check_safe_mode(self) -> None:
         if not self.power.is_low:
-            return
-
-        if self.computer.mode == Mode.SAFE:
-            return
-
-        self.__enter_safe_mode()
+            self.__enter_safe_mode()
 
     def __enter_safe_mode(self) -> None:
-        self.computer.update_mode(Mode.SAFE)
-        self.communications.update_downlink_rate(DownlinkRate.LOW)
+        if self.computer.mode != Mode.SAFE:
+            self.computer.update_mode(Mode.SAFE)
 
-        # Add event to log that the spacecraft has entered safe mode
+        if self.communications.downlink_rate != DownlinkRate.LOW:
+            self.communications.update_downlink_rate(DownlinkRate.LOW)
+
+        # TODO: Add event to log that the spacecraft has entered safe mode
 
         # TODO:
         # SAFE mode:
