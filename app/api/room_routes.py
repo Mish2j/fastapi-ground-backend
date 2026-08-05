@@ -1,15 +1,14 @@
 from fastapi import APIRouter, HTTPException
 
+from app.constants import ERR_ROOM_NOT_FOUND
 from app.models.room import (
+    CreateRoomRequest,
+    JoinRoomRequest,
     JoinRoomResponse,
     RoomResponse,
-    JoinRoomRequest,
-    CreateRoomRequest,
 )
-from app.services.room_service import room_manager
-
-from app.constants import ERR_ROOM_NOT_FOUND
-
+from app.managers.room_manager import room_manager
+from app.services.telemetry_service import telemetry_service
 
 router = APIRouter(prefix='/rooms', tags=['Rooms'])
 
@@ -51,7 +50,6 @@ def list_rooms():
             'max_users': room.max_users,
             'connected_users': room.connected_users(),
             'total_participants': len(room.participants),
-            'is_streaming': room.is_streaming,
             'last_activity_at': room.last_activity_at.isoformat(),
             'is_inactive': room.is_inactive(),
         }
@@ -60,10 +58,14 @@ def list_rooms():
 
 
 @router.delete('/inactive')
-def cleanup_inactive_rooms(timeout_minutes: int = 30) -> dict:
-    removed_rooms = room_manager.cleanup_inactive_rooms(timeout_minutes)
+async def cleanup_inactive_rooms(timeout_minutes: int = 30) -> dict:
+    inactive_rooms = room_manager.find_inactive_rooms(timeout_minutes)
+
+    for room_code in inactive_rooms:
+        await telemetry_service.stop_stream(room_code)
+        room_manager.remove_room(room_code)
 
     return {
-        'removed_count': len(removed_rooms),
-        'removed_rooms': removed_rooms,
+        'removed_count': len(inactive_rooms),
+        'removed_rooms': inactive_rooms,
     }

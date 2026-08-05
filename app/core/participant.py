@@ -1,27 +1,9 @@
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
 import random
 import string
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 
-from app.constants import Command, ParticipantRole
-
-
-COMMAND_PERMISSIONS = {
-    ParticipantRole.FLIGHT_DIRECTOR: {
-        Command.SET_MODE,
-        Command.SET_DOWNLINK_RATE,
-        Command.INJECT_FAULT,
-        Command.CLEAR_FAULTS,
-    },
-    ParticipantRole.GROUND_OPERATOR: {
-        Command.SET_MODE,
-        Command.SET_DOWNLINK_RATE,
-        Command.CLEAR_FAULTS,
-    },
-    ParticipantRole.TELEMETRY_OFFICER: set(),
-    ParticipantRole.PAYLOAD_OFFICER: set(),
-    ParticipantRole.OBSERVER: set(),
-}
+from app.constants import ParticipantRole
 
 
 def generate_participant_id() -> str:
@@ -33,10 +15,8 @@ class Participant:
     display_name: str
     role: ParticipantRole = ParticipantRole.OBSERVER
     participant_id: str = field(default_factory=generate_participant_id)
-    is_connected: bool = False  # OR maybe assign room code (if no room assigned, then part. is disconnected)
-    joined_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    is_connected: bool = False
+    joined_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def connect(self) -> None:
         self.is_connected = True
@@ -52,10 +32,6 @@ class Participant:
 
     def update_role(self, role: ParticipantRole) -> None:
         self.role = role
-
-    def can_execute(self, command: Command) -> bool:
-        """Command permissions by role"""
-        return command in COMMAND_PERMISSIONS[self.role]
 
     def can_assign_roles(self) -> bool:
         return self.role == ParticipantRole.FLIGHT_DIRECTOR

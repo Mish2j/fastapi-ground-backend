@@ -1,22 +1,18 @@
-"""
-Description:
-Python FastAPI ground-software simulator with modular telemetry generation, command validation, event logging, WebSocket broadcasting, and REST APIs for dashboard (later Open MCT) integration.
-"""
-
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 from contextlib import asynccontextmanager
 
-from app.api.telemetry_routes import router as telemetry_router
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.api.command_routes import router as command_router
 from app.api.event_routes import router as event_router
-from app.api.room_routes import router as room_router
-from app.realtime.websocket_routes import router as websocket_router
 from app.api.participant_routes import router as participant_router
-
+from app.api.room_routes import router as room_router
+from app.api.telemetry_routes import router as telemetry_router
+from app.api.websocket_routes import router as websocket_router
 from app.constants import ROOM_CLEANUP_INTERVAL_SECONDS
-from app.services.room_service import room_manager
+from app.managers.room_manager import room_manager
+from app.services.telemetry_service import telemetry_service
 
 
 @asynccontextmanager
@@ -66,10 +62,13 @@ async def root():
 
 async def cleanup_rooms_loop() -> None:
     while True:
-        print('Loop running')
-        removed_rooms = room_manager.cleanup_inactive_rooms()
+        inactive_rooms = room_manager.find_inactive_rooms()
 
-        if removed_rooms:
-            print(f'Removed inactive rooms: {removed_rooms}')
+        for room_code in inactive_rooms:
+            await telemetry_service.stop_stream(room_code)
+            room_manager.remove_room(room_code)
+
+        if inactive_rooms:
+            print(f'Removed inactive rooms: {inactive_rooms}')
 
         await asyncio.sleep(ROOM_CLEANUP_INTERVAL_SECONDS)

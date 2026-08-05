@@ -1,6 +1,7 @@
 from enum import StrEnum
 
 ERR_ROOM_NOT_FOUND = 'Room not found!'
+ERR_PARTICIPANT_NOT_FOUND = 'Participant not found!'
 
 ROOM_CLEANUP_INTERVAL_SECONDS = 60
 ROOM_INACTIVITY_TIMEOUT_MINUTES = 30

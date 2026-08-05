@@ -11,3 +11,5 @@ dependencies = [
 
 [tool.ruff.format]
 quote-style = "single"
+[tool.pyright]
+typeCheckingMode = "standard"

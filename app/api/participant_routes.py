@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 
-from app.constants import ERR_ROOM_NOT_FOUND, ParticipantRole
+from app.constants import ERR_ROOM_NOT_FOUND
+from app.managers.room_manager import room_manager
 from app.models.participant import ParticipantResponse, ParticipantRoleRequest
-from app.services.room_service import room_manager
 
 router = APIRouter(prefix='/rooms', tags=['Participants'])
 
@@ -26,6 +26,25 @@ def get_room_participants(room_code: str) -> list[ParticipantResponse]:
     ]
 
 
+@router.delete('/{room_code}/participants/{participant_id}')
+def leave_room_participant(room_code: str, participant_id: str) -> dict:
+
+    room = room_manager.get_room(room_code)
+
+    if room is None:
+        raise HTTPException(status_code=404, detail=ERR_ROOM_NOT_FOUND)
+
+    try:
+        room_manager.leave_room(room_code, participant_id)
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+    return {
+        'room_code': room_code,
+        'participant_id': participant_id,
+    }
+
+
 @router.patch(
     '/{room_code}/participants/{participant_id}/role',
     response_model=ParticipantResponse,
@@ -39,7 +58,9 @@ def update_participant_role(
         raise HTTPException(status_code=404, detail=ERR_ROOM_NOT_FOUND)
 
     try:
-        participant = room.assign_role(request, participant_id)
+        participant = room.assign_role(
+            request.requester_id, participant_id, request.role
+        )
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
