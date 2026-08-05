@@ -143,7 +143,7 @@ class CommandService:
                 message=str(error),
             )
 
-        mission_state.inject_fault(validated.fault)
+        # mission_state.inject_fault(validated.fault)
 
         return CommandResponse(
             status=Status.ACCEPTED,

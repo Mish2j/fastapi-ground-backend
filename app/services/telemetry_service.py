@@ -3,12 +3,15 @@ from dataclasses import dataclass, field
 
 from app.core.room import MissionRoom
 from app.core.state import MissionState
+from app.core.subsystems.orbit.orbit_provider import OrbitProvider
+from app.core.subsystems.orbit.simple_orbit_provider import SimpleOrbitProvider
 from app.managers.websocket_manager import websocket_manager
 from app.models.telemetry import Telemetry
 
 
 @dataclass
 class TelemetryService:
+    orbit_provider: OrbitProvider
     stream_tasks: dict[str, asyncio.Task] = field(default_factory=dict)
 
     def generate(self, mission_state: MissionState) -> Telemetry:
@@ -16,12 +19,12 @@ class TelemetryService:
         return Telemetry(
             timestamp=mission_state.simulation_time,
             satellite_id=mission_state.satellite_id,
-            mode=mission_state.mode,
-            downlink_rate=mission_state.downlink_rate,
+            mode=mission_state.computer.mode,
+            downlink_rate=mission_state.communications.downlink_rate,
             battery_percent=mission_state.power.battery_percent,
             battery_voltage=mission_state.power.battery_voltage,
             temperature_c=mission_state.thermal.temperature_c,
-            signal_strength_db=mission_state.signal_strength_db,
+            signal_strength_db=mission_state.communications.signal_strength_db,
             latitude=mission_state.orbit.latitude,
             longitude=mission_state.orbit.longitude,
             altitude_km=mission_state.orbit.altitude_km,
@@ -29,12 +32,14 @@ class TelemetryService:
         )
 
     async def start_stream(self, room: MissionRoom) -> None:
+        print('Starting stream')
         room_code = room.room_code
 
         if room_code in self.stream_tasks:
             return
 
         self.stream_tasks[room_code] = asyncio.create_task(self.__telemetry_loop(room))
+        print('stream_tasks: ', self.stream_tasks)
 
     async def stop_stream(self, room_code: str) -> None:
         task = self.stream_tasks.pop(room_code, None)
@@ -46,21 +51,30 @@ class TelemetryService:
         return room_code in self.stream_tasks
 
     async def __telemetry_loop(self, room: MissionRoom) -> None:
+        print('Telemetry loop started')
         try:
             while True:
-                room.mission_state.update()
+                print('tick')
+                room.mission_state.update(self.orbit_provider)
 
                 telemetry = self.generate(room.mission_state)
 
                 room.save_telemetry(telemetry)
 
                 # send to ALL connections
-                await websocket_manager.broadcast(room.room_code, telemetry)
+                print('Broadcasting...')
+                await websocket_manager.broadcast(
+                    room.room_code,
+                    telemetry.model_dump(mode='json'),
+                )
+                print('Broadcast finished')
                 # wait 1 second, repeat
                 await asyncio.sleep(1)
 
         except asyncio.CancelledError:
-            pass
+            print('Telemetry loop cancelled')
 
 
-telemetry_service = TelemetryService()
+telemetry_service = TelemetryService(
+    orbit_provider=SimpleOrbitProvider(),
+)

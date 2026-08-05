@@ -3,10 +3,11 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from app.core.subsystems.orbit.orbit import OrbitState
+from app.core.subsystems.orbit.orbit_provider import OrbitProvider
 
 
 @dataclass
-class SimpleOrbitProvider:
+class SimpleOrbitProvider(OrbitProvider):
     # Low Earth Orbit (LEO) by default
 
     altitude_km: float = 550.0
@@ -25,6 +26,10 @@ class SimpleOrbitProvider:
 
         if self.epoch is None:
             self.epoch = datetime.now(UTC)
+
+        # ensure simulation_time is timezone-aware
+        if simulation_time.tzinfo is None:
+            simulation_time = simulation_time.replace(tzinfo=UTC)
 
         # How much time has passed?
         elapsed_seconds = (simulation_time - self.epoch).total_seconds()

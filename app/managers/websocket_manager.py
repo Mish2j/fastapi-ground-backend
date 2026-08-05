@@ -1,8 +1,7 @@
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from fastapi import WebSocket, WebSocketDisconnect
-
-from app.models.telemetry import Telemetry
 
 
 @dataclass
@@ -40,7 +39,11 @@ class WebSocketManager:
         if not room_connections:
             self.connections.pop(room_code, None)
 
-    async def broadcast(self, room_code: str, data: Telemetry | dict) -> None:
+    async def broadcast(
+        self,
+        room_code: str,
+        data: Mapping[str, object],
+    ) -> None:
         room_connections = self.connections.get(room_code)
 
         if room_connections is None:

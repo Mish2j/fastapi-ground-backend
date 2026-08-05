@@ -1,6 +1,5 @@
 import asyncio
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,7 +11,6 @@ from app.api.room_routes import router as room_router
 from app.api.telemetry_routes import router as telemetry_router
 from app.api.websocket_routes import router as websocket_router
 from app.constants import ROOM_CLEANUP_INTERVAL_SECONDS
-from app.core.subsystems.orbit.simple_orbit_provider import SimpleOrbitProvider
 from app.managers.room_manager import room_manager
 from app.services.telemetry_service import telemetry_service
 

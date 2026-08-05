@@ -136,7 +136,7 @@ class MissionRoom:
     # Flight Director assigns roles manually
     def assign_role(
         self, requester_id: str, participant_id: str, new_role: ParticipantRole
-    ) -> Participant | None:
+    ) -> Participant:
         self.touch()
         requester = self.participants.get(requester_id)
         participant = self.participants.get(participant_id)
