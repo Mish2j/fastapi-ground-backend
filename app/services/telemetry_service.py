@@ -2,8 +2,8 @@ import asyncio
 from dataclasses import dataclass, field
 
 from app.constants import SIMULATION_STEP_SECONDS
+from app.core.mission_state import MissionState
 from app.core.room import MissionRoom
-from app.core.state import MissionState
 from app.core.subsystems.orbit.orbit_provider import OrbitProvider
 from app.core.subsystems.orbit.simple_orbit_provider import SimpleOrbitProvider
 from app.managers.websocket_manager import websocket_manager

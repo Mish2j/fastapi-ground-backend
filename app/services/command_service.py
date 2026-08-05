@@ -1,11 +1,14 @@
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.constants import Command, Event, ParticipantRole, Status
+from app.constants import Command, Event, FaultSeverity, ParticipantRole, Status
+from app.core.mission_state import MissionState
 from app.core.participant import Participant
 from app.core.room import MissionRoom
-from app.core.state import MissionState
+from app.core.subsystems.faults.fault import Fault
 from app.models.command import (
     CommandRequest,
     CommandResponse,
@@ -143,7 +146,15 @@ class CommandService:
                 message=str(error),
             )
 
-        # mission_state.inject_fault(validated.fault)
+        fault = Fault(
+            id=str(uuid4()),
+            type=validated.fault,
+            severity=FaultSeverity.WARNING,
+            message=f'{validated.fault} injected',
+            created_at=datetime.now(UTC),
+        )
+
+        mission_state.inject_fault(fault)
 
         return CommandResponse(
             status=Status.ACCEPTED,

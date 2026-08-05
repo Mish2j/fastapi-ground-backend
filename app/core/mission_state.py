@@ -6,14 +6,14 @@ from app.constants import DownlinkRate, Mode
 # from app.core.subsystems.attitude import AttitudeState
 from app.core.subsystems.communications import CommunicationsState
 from app.core.subsystems.computer import ComputerState
+from app.core.subsystems.faults.fault import Fault
+from app.core.subsystems.faults.fault_manager import FaultManager
 from app.core.subsystems.orbit.orbit import OrbitState
 
 # from app.core.subsystems.payload import PayloadState
 from app.core.subsystems.orbit.orbit_provider import OrbitProvider
 from app.core.subsystems.power import PowerState
 from app.core.subsystems.thermal import ThermalState
-from app.managers.fault_manager import FaultManager
-from app.models.fault import Fault
 
 
 @dataclass
@@ -62,7 +62,7 @@ class MissionState:
         pass
 
     def inject_fault(self, fault: Fault) -> None:
-        pass
+        self.faults.inject(fault)
 
     def clear_faults(self) -> None:
         pass

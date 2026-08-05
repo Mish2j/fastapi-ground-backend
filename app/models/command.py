@@ -2,7 +2,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.constants import Command, DownlinkRate, Mode
+from app.constants import Command, DownlinkRate, FaultType, Mode
 
 
 class CommandRequest(BaseModel):
@@ -25,4 +25,4 @@ class SetDownlinkRateParams(BaseModel):
 
 
 class InjectFaultParams(BaseModel):
-    fault: str = Field(min_length=1)
+    fault: FaultType

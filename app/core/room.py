@@ -2,8 +2,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 from app.constants import ERR_PARTICIPANT_NOT_FOUND, ParticipantRole
+from app.core.mission_state import MissionState
 from app.core.participant import Participant
-from app.core.state import MissionState
 from app.models.telemetry import Telemetry
 
 MAX_TELEMETRY_HISTORY = 500

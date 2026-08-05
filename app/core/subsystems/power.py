@@ -1,6 +1,7 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from app.managers.fault_manager import FaultManager
+from app.constants import FaultType
+from app.core.subsystems.faults.fault_manager import FaultManager
 
 
 @dataclass
@@ -12,8 +13,15 @@ class PowerState:
     # solar_generation: float = 0
     # power_consumption: float = 0
 
-    def update(self, dt: float, faults: FaultManager) -> None:
-        pass
+    def update(self, delta_seconds: float, faults: FaultManager) -> None:
+        drain_rate = 0.001
+
+        if faults.has(FaultType.BATTERY_DEGRADATION):
+            drain_rate *= 5
+
+        self.battery_percent = max(
+            0.0, self.battery_percent - drain_rate * delta_seconds
+        )
 
     def charge(self) -> None:
         pass
