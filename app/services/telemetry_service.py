@@ -1,6 +1,7 @@
 import asyncio
 from dataclasses import dataclass, field
 
+from app.constants import SIMULATION_STEP_SECONDS
 from app.core.room import MissionRoom
 from app.core.state import MissionState
 from app.core.subsystems.orbit.orbit_provider import OrbitProvider
@@ -55,7 +56,10 @@ class TelemetryService:
         try:
             while True:
                 print('tick')
-                room.mission_state.update(self.orbit_provider)
+                room.mission_state.update(
+                    self.orbit_provider,
+                    delta_seconds=SIMULATION_STEP_SECONDS,
+                )
 
                 telemetry = self.generate(room.mission_state)
 
@@ -68,8 +72,8 @@ class TelemetryService:
                     telemetry.model_dump(mode='json'),
                 )
                 print('Broadcast finished')
-                # wait 1 second, repeat
-                await asyncio.sleep(1)
+                # wait x second, repeat
+                await asyncio.sleep(SIMULATION_STEP_SECONDS)
 
         except asyncio.CancelledError:
             print('Telemetry loop cancelled')
