@@ -58,10 +58,10 @@ class MissionState:
         self.last_updated_at = datetime.now(UTC)
 
     def set_mode(self, mode: Mode) -> None:
-        pass
+        self.computer.update_mode(mode)
 
     def set_downlink_rate(self, rate: DownlinkRate) -> None:
-        pass
+        self.communications.update_downlink_rate(rate)
 
     def inject_fault(self, fault: Fault) -> None:
         self.faults.inject(fault)
