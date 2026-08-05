@@ -5,9 +5,9 @@ from app.constants import DownlinkRate, Mode
 
 # from app.core.subsystems.attitude import AttitudeState
 from app.core.subsystems.communications import CommunicationsState
-from app.core.subsystems.computer import ComputerState
 from app.core.subsystems.faults.fault import Fault
 from app.core.subsystems.faults.fault_manager import FaultManager
+from app.core.subsystems.flight_computer import FlightComputerState
 from app.core.subsystems.orbit.orbit import OrbitState
 
 # from app.core.subsystems.payload import PayloadState
@@ -26,7 +26,7 @@ class MissionState:
     orbit: OrbitState = field(default_factory=OrbitState)
     # attitude: AttitudeState = field(default_factory=AttitudeState)
     # payload: PayloadState = field(default_factory=PayloadState)
-    computer: ComputerState = field(default_factory=ComputerState)
+    computer: FlightComputerState = field(default_factory=FlightComputerState)
     faults: FaultManager = field(default_factory=FaultManager)
 
     # Time
@@ -51,7 +51,9 @@ class MissionState:
         # self.communications.update(self, delta_seconds)
         # self.payload.update(self, delta_seconds)
         # self.attitude.update(self, delta_seconds)
-        # self.computer.update(self, delta_seconds)
+        # self.computer.update(delta_seconds, self.power)
+
+        self.__check_safe_mode()
 
         self.last_updated_at = datetime.now(UTC)
 
@@ -65,4 +67,27 @@ class MissionState:
         self.faults.inject(fault)
 
     def clear_faults(self) -> None:
-        pass
+        self.faults.clear()
+
+    def __check_safe_mode(self) -> None:
+        if not self.power.is_low:
+            return
+
+        if self.computer.mode == Mode.SAFE:
+            return
+
+        self.__enter_safe_mode()
+
+    def __enter_safe_mode(self) -> None:
+        self.computer.update_mode(Mode.SAFE)
+        self.communications.update_downlink_rate(DownlinkRate.LOW)
+
+        # Add event to log that the spacecraft has entered safe mode
+
+        # TODO:
+        # SAFE mode:
+        # - disable payload
+        # - reduce power consumption
+        # - change telemetry frequency
+        # - disable experiments
+        # - enable beacon mode

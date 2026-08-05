@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from app.constants import DownlinkRate
 
@@ -9,5 +9,7 @@ class CommunicationsState:
     # link_status: str = 'Online'
     downlink_rate: DownlinkRate = DownlinkRate.MEDIUM
 
-    def update(self, dt: float) -> None:
-        pass
+    def update_downlink_rate(self, downlink_rate: DownlinkRate) -> None:
+        # if self.downlink_rate == downlink_rate:
+        #     return
+        self.downlink_rate = downlink_rate
