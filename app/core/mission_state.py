@@ -2,8 +2,10 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 from app.constants import DownlinkRate, Mode
+from app.core.events.event import Event
 
 # from app.core.subsystems.attitude import AttitudeState
+from app.core.events.event_types import EventStatus, EventType
 from app.core.subsystems.communications import CommunicationsState
 from app.core.subsystems.faults.fault import Fault
 from app.core.subsystems.faults.fault_manager import FaultManager
@@ -19,6 +21,8 @@ from app.core.subsystems.thermal import ThermalState
 @dataclass
 class MissionState:
     satellite_id: str = 'SAT-001'
+
+    pending_events: list[Event] = field(default_factory=list)
 
     power: PowerState = field(default_factory=PowerState)
     thermal: ThermalState = field(default_factory=ThermalState)
@@ -74,13 +78,18 @@ class MissionState:
             self.__enter_safe_mode()
 
     def __enter_safe_mode(self) -> None:
-        if self.computer.mode != Mode.SAFE:
-            self.computer.update_mode(Mode.SAFE)
+        self.computer.update_mode(Mode.SAFE)
 
-        if self.communications.downlink_rate != DownlinkRate.LOW:
-            self.communications.update_downlink_rate(DownlinkRate.LOW)
+        self.communications.update_downlink_rate(DownlinkRate.LOW)
 
-        # TODO: Add event to log that the spacecraft has entered safe mode
+        event = Event(
+            timestamp=datetime.now(UTC),
+            type=EventType.MODE_CHANGE,
+            status=EventStatus.INFO,
+            message='Spacecraft has entered SAFE mode due to low power.',
+        )
+
+        self.pending_events.append(event)
 
         # TODO:
         # SAFE mode:

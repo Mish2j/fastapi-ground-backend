@@ -8,6 +8,7 @@ from app.core.subsystems.orbit.orbit_provider import OrbitProvider
 from app.core.subsystems.orbit.simple_orbit_provider import SimpleOrbitProvider
 from app.managers.websocket_manager import websocket_manager
 from app.models.telemetry import Telemetry
+from app.services.event_service import event_service
 
 
 @dataclass
@@ -59,6 +60,11 @@ class TelemetryService:
                 room.mission_state.update(
                     self.orbit_provider,
                     delta_seconds=SIMULATION_STEP_SECONDS,
+                )
+
+                event_service.collect_events(
+                    mission_state=room.mission_state,
+                    room=room,
                 )
 
                 telemetry = self.generate(room.mission_state)

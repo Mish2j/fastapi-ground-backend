@@ -34,12 +34,6 @@ class Status(StrEnum):
     ACCEPTED = 'ACCEPTED'
 
 
-class Event(StrEnum):
-    COMMAND = 'COMMAND'
-    SYSTEM = 'SYSTEM'
-    FAULT = 'FAULT'
-
-
 class Command(StrEnum):
     SET_MODE = 'SET_MODE'
     SET_DOWNLINK_RATE = 'SET_DOWNLINK_RATE'

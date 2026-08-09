@@ -4,7 +4,9 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.constants import Command, Event, FaultSeverity, ParticipantRole, Status
+from app.constants import Command, FaultSeverity, ParticipantRole, Status
+from app.core.events.event import Event
+from app.core.events.event_types import EventStatus, EventType
 from app.core.mission_state import MissionState
 from app.core.participant import Participant
 from app.core.room import MissionRoom
@@ -16,6 +18,7 @@ from app.models.command import (
     SetDownlinkRateParams,
     SetModeParams,
 )
+from app.services.event_service import event_service
 
 COMMAND_PERMISSIONS = {
     ParticipantRole.FLIGHT_DIRECTOR: {
@@ -84,12 +87,15 @@ class CommandService:
                 message=f'Unknown command: {command}',
             )
 
-        room.add_event(
-            event_type=Event.COMMAND,
-            command=command,
-            status=result.status,
+        event = Event(
+            timestamp=datetime.now(UTC),
+            type=EventType.COMMAND,
+            status=EventStatus(result.status),
             message=f'{participant.display_name}: {result.message}',
+            command=command,
         )
+
+        event_service.add_event(room, event)
 
         room.touch()
 

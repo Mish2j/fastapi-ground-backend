@@ -2,12 +2,12 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 from app.constants import ERR_PARTICIPANT_NOT_FOUND, ParticipantRole
+from app.core.events.event import Event
 from app.core.mission_state import MissionState
 from app.core.participant import Participant
 from app.models.telemetry import Telemetry
 
 MAX_TELEMETRY_HISTORY = 500
-MAX_EVENT_LOG = 200
 
 ROLE_LIMITS: dict[ParticipantRole, int | None] = {
     ParticipantRole.FLIGHT_DIRECTOR: 1,
@@ -27,8 +27,7 @@ class MissionRoom:
     last_activity_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     mission_state: MissionState = field(default_factory=MissionState)
-    event_log: list[dict] = field(default_factory=list)
-    # event_log: list[MissionEvent]
+    event_log: list[Event] = field(default_factory=list)
     participants: dict[str, Participant] = field(default_factory=dict)
 
     def connected_users(self) -> int:
@@ -105,32 +104,7 @@ class MissionRoom:
     def get_telemetry_history(self, limit: int = 100) -> list[Telemetry]:
         return self.telemetry_history[-limit:]
 
-    def save_event(self, event: dict):
-        if len(self.event_log) >= MAX_EVENT_LOG:
-            self.event_log.pop(0)
-
-        self.event_log.append(event)
-
-    def add_event(
-        self,
-        event_type: str,
-        message: str,
-        status: str = 'INFO',
-        command: str | None = None,
-    ) -> dict:
-        event = {
-            'timestamp': datetime.now(UTC).isoformat(),
-            'type': event_type,
-            'status': status,
-            'message': message,
-            'command': command,
-        }
-
-        self.save_event(event)
-
-        return event
-
-    def get_events(self, limit: int = 50) -> list[dict]:
+    def get_events(self, limit: int = 50) -> list[Event]:
         return self.event_log[-limit:]
 
     # Flight Director assigns roles manually
