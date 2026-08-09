@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
-from app.constants import FaultType
-from app.core.subsystems.faults.fault import Fault
+from app.core.faults.fault import Fault
+from app.core.faults.fault_types import FaultType
 
 
 @dataclass
@@ -15,8 +15,13 @@ class FaultManager:
         if fault not in self.active_faults:
             self.active_faults.append(fault)
 
-    def clear(self) -> None:
+    def clear_all_faults(self) -> None:
         self.active_faults.clear()
+
+    def clear_fault(self, fault_type: FaultType) -> None:
+        self.active_faults = [
+            fault for fault in self.active_faults if fault.type != fault_type
+        ]
 
     def has(self, fault_type: FaultType) -> bool:
         return any(

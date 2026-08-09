@@ -4,13 +4,14 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.constants import Command, FaultSeverity, ParticipantRole, Status
+from app.constants import Command, ParticipantRole, Status
 from app.core.events.event import Event
 from app.core.events.event_types import EventStatus, EventType
+from app.core.faults.fault import Fault
+from app.core.faults.fault_types import FaultSeverity
 from app.core.mission_state import MissionState
 from app.core.participant import Participant
 from app.core.room import MissionRoom
-from app.core.subsystems.faults.fault import Fault
 from app.models.command import (
     CommandRequest,
     CommandResponse,

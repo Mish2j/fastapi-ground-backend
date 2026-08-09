@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from app.constants import FaultSeverity, FaultType
+from app.core.faults.fault_types import FaultSeverity, FaultType
 
 
 class Fault(BaseModel):

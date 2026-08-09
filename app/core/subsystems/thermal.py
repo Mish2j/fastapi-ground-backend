@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
+from app.core.faults.fault_manager import FaultManager
 from app.core.subsystems.power import PowerState
-from app.core.subsystems.faults.fault_manager import FaultManager
 
 
 @dataclass

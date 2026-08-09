@@ -2,7 +2,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.constants import Command, DownlinkRate, FaultType, Mode
+from app.constants import Command, DownlinkRate, Mode
+from app.core.faults.fault_types import FaultType
 
 
 class CommandRequest(BaseModel):
