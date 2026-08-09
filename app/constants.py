@@ -19,6 +19,7 @@ class Command(StrEnum):
     SET_DOWNLINK_RATE = 'SET_DOWNLINK_RATE'
     INJECT_FAULT = 'INJECT_FAULT'
     CLEAR_FAULTS = 'CLEAR_FAULTS'
+    CLEAR_FAULT = 'CLEAR_FAULT'
 
 
 class Mode(StrEnum):
