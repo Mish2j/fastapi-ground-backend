@@ -74,7 +74,7 @@ class MissionState:
         self.faults.clear_all_faults()
 
     def __check_safe_mode(self) -> None:
-        if not self.power.is_low:
+        if self.power.is_low:
             self.__enter_safe_mode()
 
     def __enter_safe_mode(self) -> None:
