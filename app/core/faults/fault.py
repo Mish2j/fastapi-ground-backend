@@ -11,4 +11,4 @@ class Fault(BaseModel):
     severity: FaultSeverity
     message: str
     created_at: datetime
-    active: bool = True
+    active: bool = True  # will need this for fault history (future feature)

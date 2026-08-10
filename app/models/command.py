@@ -26,4 +26,8 @@ class SetDownlinkRateParams(BaseModel):
 
 
 class InjectFaultParams(BaseModel):
-    fault: FaultType
+    fault_type: FaultType
+
+
+class ClearFaultParams(BaseModel):
+    fault_type: FaultType

@@ -8,11 +8,12 @@ from app.constants import Command, ParticipantRole, Status
 from app.core.events.event import Event
 from app.core.events.event_types import EventStatus, EventType
 from app.core.faults.fault import Fault
-from app.core.faults.fault_types import FaultSeverity
+from app.core.faults.fault_types import FaultSeverity, FaultType
 from app.core.mission_state import MissionState
 from app.core.participant import Participant
 from app.core.room import MissionRoom
 from app.models.command import (
+    ClearFaultParams,
     CommandRequest,
     CommandResponse,
     InjectFaultParams,
@@ -26,12 +27,14 @@ COMMAND_PERMISSIONS = {
         Command.SET_MODE,
         Command.SET_DOWNLINK_RATE,
         Command.INJECT_FAULT,
-        Command.CLEAR_FAULTS,
+        Command.CLEAR_ALL_FAULTS,
+        Command.CLEAR_FAULT,
     },
     ParticipantRole.GROUND_OPERATOR: {
         Command.SET_MODE,
         Command.SET_DOWNLINK_RATE,
-        Command.CLEAR_FAULTS,
+        Command.CLEAR_ALL_FAULTS,
+        Command.CLEAR_FAULT,
     },
     ParticipantRole.TELEMETRY_OFFICER: set(),
     ParticipantRole.PAYLOAD_OFFICER: set(),
@@ -79,8 +82,14 @@ class CommandService:
         elif command == Command.INJECT_FAULT:
             result = self.__handle_inject_fault(params, room.mission_state)
 
-        elif command == Command.CLEAR_FAULTS:
-            result = self.__handle_clear_faults(room.mission_state)
+        elif command == Command.CLEAR_ALL_FAULTS:
+            result = self.__handle_clear_all_faults(room.mission_state)
+
+        elif command == Command.CLEAR_FAULT:
+            result = self.__handle_clear_fault(
+                room.mission_state,
+                params,
+            )
 
         else:
             result = CommandResponse(
@@ -155,9 +164,9 @@ class CommandService:
 
         fault = Fault(
             id=str(uuid4()),
-            type=validated.fault,
+            type=validated.fault_type,
             severity=FaultSeverity.WARNING,
-            message=f'{validated.fault} injected',
+            message=f'{validated.fault_type} injected',
             created_at=datetime.now(UTC),
         )
 
@@ -165,15 +174,34 @@ class CommandService:
 
         return CommandResponse(
             status=Status.ACCEPTED,
-            message=f'Fault injected: {validated.fault}',
+            message=f'Fault injected: {validated.fault_type}',
         )
 
-    def __handle_clear_faults(self, mission_state: MissionState) -> CommandResponse:
-        mission_state.clear_faults()
+    def __handle_clear_all_faults(self, mission_state: MissionState) -> CommandResponse:
+        mission_state.clear_all_faults()
 
         return CommandResponse(
             status=Status.ACCEPTED,
             message='All faults cleared',
+        )
+
+    def __handle_clear_fault(
+        self,
+        mission_state: MissionState,
+        params: dict,
+    ) -> CommandResponse:
+        try:
+            validated = ClearFaultParams(**params)
+        except ValidationError as error:
+            return CommandResponse(
+                status=Status.REJECTED,
+                message=str(error),
+            )
+        mission_state.clear_fault(validated.fault_type)
+
+        return CommandResponse(
+            status=Status.ACCEPTED,
+            message=f'Fault cleared: {validated.fault_type}',
         )
 
 

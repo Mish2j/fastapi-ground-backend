@@ -8,6 +8,7 @@ from app.core.events.event import Event
 from app.core.events.event_types import EventStatus, EventType
 from app.core.faults.fault import Fault
 from app.core.faults.fault_manager import FaultManager
+from app.core.faults.fault_types import FaultType
 from app.core.subsystems.communications import CommunicationsState
 from app.core.subsystems.flight_computer import FlightComputerState
 from app.core.subsystems.orbit.orbit import OrbitState
@@ -70,8 +71,11 @@ class MissionState:
     def inject_fault(self, fault: Fault) -> None:
         self.faults.inject(fault)
 
-    def clear_faults(self) -> None:
+    def clear_all_faults(self) -> None:
         self.faults.clear_all_faults()
+
+    def clear_fault(self, fault_type: FaultType) -> None:
+        self.faults.clear_fault(fault_type)
 
     def __check_safe_mode(self) -> None:
         if self.power.is_low:
