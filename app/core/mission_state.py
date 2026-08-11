@@ -63,19 +63,52 @@ class MissionState:
         self.last_updated_at = datetime.now(UTC)
 
     def set_mode(self, mode: Mode) -> None:
+        can_enter_mode, reason = self.__can_enter_mode(mode)
+
+        if not can_enter_mode:
+            raise ValueError(reason)
+
         self.computer.update_mode(mode)
 
     def set_downlink_rate(self, rate: DownlinkRate) -> None:
+        can_set_rate, reason = self.__can_set_downlink_rate(rate)
+
+        if not can_set_rate:
+            raise ValueError(reason)
+
         self.communications.update_downlink_rate(rate)
 
     def inject_fault(self, fault: Fault) -> None:
+        if self.faults.has(fault.type):
+            raise ValueError(f'Fault of type {fault.type} is already active.')
         self.faults.inject(fault)
 
     def clear_all_faults(self) -> None:
+        if not self.faults.active_faults:
+            raise ValueError('No active faults to clear.')
         self.faults.clear_all_faults()
 
     def clear_fault(self, fault_type: FaultType) -> None:
+        if not self.faults.has(fault_type):
+            raise ValueError(f'No active fault of type {fault_type} to clear.')
         self.faults.clear_fault(fault_type)
+
+    def __can_enter_mode(self, requested_mode: Mode) -> tuple[bool, str | None]:
+        if self.power.is_low and requested_mode != Mode.SAFE:
+            return False, 'Cannot exit SAFE mode while battery is low.'
+
+        # if self.thermal.is_critical and requested_mode != Mode.SAFE:
+        #     return False, 'Cannot exit SAFE mode while temperature is critical.'
+
+        return True, None
+
+    def __can_set_downlink_rate(
+        self, requested_rate: DownlinkRate
+    ) -> tuple[bool, str | None]:
+        if self.computer.mode == Mode.SAFE and requested_rate != DownlinkRate.LOW:
+            return False, 'Only LOW downlink is allowed in SAFE mode.'
+
+        return True, None
 
     def __check_safe_mode(self) -> None:
         if self.power.is_low:

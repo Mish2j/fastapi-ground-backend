@@ -12,8 +12,7 @@ class FaultManager:
         pass
 
     def inject(self, fault: Fault) -> None:
-        if fault not in self.active_faults:
-            self.active_faults.append(fault)
+        self.active_faults.append(fault)
 
     def clear_all_faults(self) -> None:
         self.active_faults.clear()
