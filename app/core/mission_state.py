@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
-from app.constants import DownlinkRate, Mode
+from app.constants import DownlinkRate, Mode, SafeModeReason
 from app.core.events.event import Event
 
 # from app.core.subsystems.attitude import AttitudeState
@@ -97,8 +97,8 @@ class MissionState:
         if self.power.is_low and requested_mode != Mode.SAFE:
             return False, 'Cannot exit SAFE mode while battery is low.'
 
-        # if self.thermal.is_critical and requested_mode != Mode.SAFE:
-        #     return False, 'Cannot exit SAFE mode while temperature is critical.'
+        if self.thermal.is_high and requested_mode != Mode.SAFE:
+            return False, 'Cannot exit SAFE mode while temperature is critical.'
 
         return True, None
 
@@ -111,10 +111,18 @@ class MissionState:
         return True, None
 
     def __check_safe_mode(self) -> None:
-        if self.power.is_low:
-            self.__enter_safe_mode()
+        if self.computer.mode == Mode.SAFE:
+            return
 
-    def __enter_safe_mode(self) -> None:
+        if self.power.is_low:
+            self.__enter_safe_mode(SafeModeReason.LOW_BATTERY)
+            return
+
+        if self.thermal.is_high:
+            self.__enter_safe_mode(SafeModeReason.HIGH_TEMPERATURE)
+            return
+
+    def __enter_safe_mode(self, reason: SafeModeReason) -> None:
         self.computer.update_mode(Mode.SAFE)
 
         self.communications.update_downlink_rate(DownlinkRate.LOW)
@@ -123,7 +131,8 @@ class MissionState:
             timestamp=datetime.now(UTC),
             type=EventType.MODE_CHANGE,
             status=EventStatus.INFO,
-            message='Spacecraft has entered SAFE mode due to low power.',
+            message='Spacecraft entered SAFE mode.',
+            reason=reason,
         )
 
         self.pending_events.append(event)

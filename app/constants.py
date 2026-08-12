@@ -34,6 +34,11 @@ class DownlinkRate(StrEnum):
     HIGH = 'HIGH'
 
 
+class SafeModeReason(StrEnum):
+    LOW_BATTERY = 'LOW_BATTERY'
+    HIGH_TEMPERATURE = 'HIGH_TEMPERATURE'
+
+
 class ParticipantRole(StrEnum):
     FLIGHT_DIRECTOR = (
         'Flight Director'  # create/manage room, assign roles, send commands
