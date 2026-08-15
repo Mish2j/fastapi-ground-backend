@@ -4,6 +4,7 @@ from enum import StrEnum
 class EventType(StrEnum):
     COMMAND = 'COMMAND'
     FAULT = 'FAULT'
+    CLEAR_FAULT = 'CLEAR_FAULT'
     MODE_CHANGE = 'MODE_CHANGE'
     WARNING = 'WARNING'
     SYSTEM = 'SYSTEM'

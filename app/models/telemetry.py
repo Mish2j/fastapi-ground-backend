@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.constants import DownlinkRate, Mode
-from app.core.subsystems.faults.fault import Fault
+from app.core.faults.fault import Fault
 
 
 class Telemetry(BaseModel):

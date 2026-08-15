@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from app.constants import FaultSeverity, FaultType
+from app.core.faults.fault_types import FaultSeverity, FaultType
 
 
 class Fault(BaseModel):
@@ -11,4 +11,4 @@ class Fault(BaseModel):
     severity: FaultSeverity
     message: str
     created_at: datetime
-    active: bool = True
+    active: bool = True  # will need this for fault history (future feature)

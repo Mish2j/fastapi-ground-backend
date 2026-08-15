@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from app.constants import FaultType
-from app.core.subsystems.faults.fault_manager import FaultManager
+from app.core.faults.fault_manager import FaultManager
+from app.core.faults.fault_types import FaultType
 
 
 @dataclass
